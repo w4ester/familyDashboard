@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/familyDashboard/static/css/main.731a568e.css",
+    "main.js": "/familyDashboard/static/js/main.a65d66ee.js",
+    "static/js/453.339aac0e.chunk.js": "/familyDashboard/static/js/453.339aac0e.chunk.js",
+    "index.html": "/familyDashboard/index.html",
+    "main.731a568e.css.map": "/familyDashboard/static/css/main.731a568e.css.map",
+    "main.a65d66ee.js.map": "/familyDashboard/static/js/main.a65d66ee.js.map",
+    "453.339aac0e.chunk.js.map": "/familyDashboard/static/js/453.339aac0e.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.731a568e.css",
+    "static/js/main.a65d66ee.js"
+  ]
+}
