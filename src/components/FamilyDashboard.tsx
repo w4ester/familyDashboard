@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import SchoolPlatforms from './SchoolPlatforms';
 
-const FamilyDashboard: React.FC = () => {
+interface FamilyDashboardProps {
+  onPageChange?: (page: string) => void;
+}
+
+const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
   // State for storing all chore entries
   const [choreEntries, setChoreEntries] = useState<any[]>([]);
   // States for form inputs
@@ -983,31 +987,46 @@ const FamilyDashboard: React.FC = () => {
       <div className="flex border-b mb-6 overflow-x-auto">
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab === 'chores' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('chores')}
+          onClick={() => {
+            setActiveTab('chores');
+            onPageChange && onPageChange('chores');
+          }}
         >
           Chores & Points
         </button>
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('assignments') ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('assignments')}
+          onClick={() => {
+            setActiveTab('assignments');
+            onPageChange && onPageChange('assignments');
+          }}
         >
           School Assignments
         </button>
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab === 'platforms' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('platforms')}
+          onClick={() => {
+            setActiveTab('platforms');
+            onPageChange && onPageChange('platforms');
+          }}
         >
           School Platforms
         </button>
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('calendar') ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => {
+            setActiveTab('calendar');
+            onPageChange && onPageChange('calendar');
+          }}
         >
           Calendar
         </button>
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab === 'family' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('family')}
+          onClick={() => {
+            setActiveTab('family');
+            onPageChange && onPageChange('family');
+          }}
         >
           Family
         </button>
