@@ -27,7 +27,12 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "mcp:install": "cd server/mcp && npm install",
+    "mcp:dev": "cd server/mcp && npm run dev",
+    "mcp:build": "cd server/mcp && npm run build",
+    "mcp:start": "cd server/mcp && npm start",
+    "dev": "concurrently \"npm start\" \"npm run mcp:dev\""
   },
   "eslintConfig": {
     "extends": [
@@ -49,6 +54,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.3"
   }
