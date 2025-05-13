@@ -1,0 +1,15 @@
+.App {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Default focus outline for better accessibility */
+:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Fix for min-width utility in Tailwind */
+.min-w-14 {
+  min-width: 3.5rem;
+}
