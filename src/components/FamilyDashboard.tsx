@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SchoolPlatforms from './SchoolPlatforms';
 
 const FamilyDashboard: React.FC = () => {
   // State for storing all chore entries
@@ -993,6 +994,12 @@ const FamilyDashboard: React.FC = () => {
           School Assignments
         </button>
         <button
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'platforms' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          onClick={() => setActiveTab('platforms')}
+        >
+          School Platforms
+        </button>
+        <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('calendar') ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => setActiveTab('calendar')}
         >
@@ -1010,6 +1017,7 @@ const FamilyDashboard: React.FC = () => {
       {activeTab === 'family' && renderFamilyTab()}
       {activeTab === 'chores' && renderChoresTab()}
       {activeTab.startsWith('assignments') && renderAssignmentsTab()}
+      {activeTab === 'platforms' && <SchoolPlatforms familyMembers={familyMembers} />}
       {activeTab.startsWith('calendar') && renderCalendarTab()}
     </div>
   );
