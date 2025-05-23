@@ -1,7 +1,7 @@
 {
   "name": "family-dashboard",
   "version": "0.1.0",
-  "homepage": "https://w4ester.github.io/familyDashboard",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
@@ -27,7 +27,16 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "mcp:install": "cd server/mcp && npm install",
+    "mcp:dev": "cd server/mcp && npm run dev",
+    "mcp:dev:secure": "cd server/mcp && npm run dev:secure",
+    "mcp:build": "cd server/mcp && npm run build",
+    "mcp:start": "cd server/mcp && npm start",
+    "mcp:start:secure": "cd server/mcp && npm run start:secure",
+    "server:setup": "./start-local-server.sh",
+    "dev": "concurrently \"npm start\" \"npm run mcp:dev\"",
+    "dev:secure": "concurrently \"npm start\" \"npm run mcp:dev:secure\""
   },
   "eslintConfig": {
     "extends": [
@@ -49,6 +58,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.3"
   }

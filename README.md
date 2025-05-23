@@ -1,46 +1,115 @@
-# Getting Started with Create React App
+# Family Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive family organization tool with AI-powered features for managing schedules, chores, school activities, and more.
+
+## Features
+
+- **Chore Tracking**: Track family chores with point system
+- **School Assignments**: Manage homework and school projects  
+- **Calendar**: Keep track of family events and activities
+- **File Gallery**: Store and organize family documents
+- **School Platforms**: Quick access to educational websites
+- **AI Integration**: Smart tools for activity suggestions and schedule optimization
+- **Local Data Storage**: All data stored persistently on your computer (no cloud dependency)
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start the application with local data storage
+./start-servers.sh
+```
+
+This will start both the local data server and the React app. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+
+For more details on data persistence, see [DATA_PERSISTENCE.md](./DATA_PERSISTENCE.md).
+
+## Smart Tools (AI Features)
+
+This project includes MCP (Model Context Protocol) and OpenAPI servers for AI integration:
+
+- **MCP Server**: Enables AI assistants to interact with files
+- **OpenAPI Server**: Provides LLM integration for smart features
+
+See [README_SMART_TOOLS.md](./README_SMART_TOOLS.md) for detailed setup and usage.
+
+### Quick Smart Tools Setup
+
+```bash
+# Install all dependencies
+npm run mcp:install
+cd server/openapi && pip install -r requirements.txt
+
+# Run everything
+npm run dev  # Runs frontend + MCP server
+# In another terminal:
+cd server/openapi && python run.py
+```
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start` - Run the frontend in development mode
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run mcp:dev` - Start the MCP filesystem server
+- `npm run dev` - Start both frontend and MCP server
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```
+family-dashboard/
+├── src/                    # React frontend source
+│   ├── components/         # React components
+│   ├── services/          # API services
+│   └── App.tsx           # Main app component
+├── server/                # Backend servers
+│   ├── mcp/              # MCP filesystem server
+│   └── openapi/          # OpenAPI/LLM server
+├── docs/                  # Documentation
+└── public/               # Static assets
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Technologies Used
 
-### `npm test`
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **MCP Server**: Node.js, Express
+- **OpenAPI Server**: Python, FastAPI
+- **AI Integration**: OpenAI API, Ollama (local models)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Documentation
 
-### `npm run build`
+- [Smart Tools Integration](./README_SMART_TOOLS.md)
+- [MCP & OpenAPI Architecture](./docs/MCP_OPENAPI_ARCHITECTURE.md)
+- [API Documentation](./server/openapi/spec/openapi.yaml)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Development
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Prerequisites
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Node.js 16+
+- Python 3.8+
+- npm or yarn
 
-### `npm run eject`
+### Setup Development Environment
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+1. Clone the repository
+2. Install frontend dependencies: `npm install`
+3. Install MCP server dependencies: `cd server/mcp && npm install`
+4. Install OpenAPI server dependencies: `cd server/openapi && pip install -r requirements.txt`
+5. Copy environment files: 
+   - `cp server/mcp/.env.example server/mcp/.env`
+   - `cp server/openapi/.env.example server/openapi/.env`
+6. Configure your API keys in the `.env` files
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Contributing
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+1. Create a feature branch
+2. Make your changes
+3. Add tests if applicable
+4. Submit a pull request
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## License
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+MIT License - see LICENSE file for details

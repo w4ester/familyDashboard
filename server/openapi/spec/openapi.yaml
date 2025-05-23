@@ -1,0 +1,422 @@
+openapi: 3.0.3
+info:
+  title: Family Dashboard API
+  description: |
+    API for Family Dashboard application that provides LLM integration and family organization features.
+    This specification helps LLMs understand how to interact with the system.
+  version: 1.0.0
+  contact:
+    name: Family Dashboard Team
+servers:
+  - url: http://localhost:3040
+    description: Local development server
+  - url: https://api.familydashboard.example
+    description: Production server (placeholder)
+
+paths:
+  /api/llm/chat:
+    post:
+      summary: Generate a response from an LLM
+      description: Send a prompt to an LLM and get a generated response
+      operationId: chatCompletion
+      tags:
+        - LLM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/llm/models:
+    get:
+      summary: List available LLM models
+      description: Get a list of all available LLM models
+      operationId: listModels
+      tags:
+        - LLM
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/family/activity-suggestions:
+    post:
+      summary: Get activity suggestions for the family
+      description: Generate personalized activity suggestions based on family members and preferences
+      operationId: suggestActivities
+      tags:
+        - Family
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+      responses:
+        '200':
+          description: Activity suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/family/schedule-help:
+    post:
+      summary: Get help organizing family schedule
+      description: Generate suggestions for organizing and optimizing family schedule
+      operationId: organizeSchedule
+      tags:
+        - Family
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+      responses:
+        '200':
+          description: Schedule organization suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API server is healthy
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  environment:
+                    type: string
+                    example: "development"
+
+components:
+  schemas:
+    LLMRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: The prompt to send to the LLM
+          example: "What are good activities for a family with young children?"
+        model:
+          type: string
+          description: The LLM model to use
+          example: "gpt-3.5-turbo"
+          default: "gpt-3.5-turbo"
+        max_tokens:
+          type: integer
+          description: Maximum number of tokens to generate
+          default: 1000
+          example: 1000
+        temperature:
+          type: number
+          description: Temperature for sampling (0.0 to 1.0)
+          default: 0.7
+          example: 0.7
+          minimum: 0
+          maximum: 1
+        system_prompt:
+          type: string
+          description: Optional system prompt to use
+          example: "You are a helpful family assistant."
+        history:
+          type: array
+          description: Optional conversation history
+          items:
+            type: object
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum: [system, user, assistant]
+                example: "user"
+              content:
+                type: string
+                example: "I need help with family activities"
+
+    LLMResponse:
+      type: object
+      required:
+        - content
+        - model
+        - tokens
+      properties:
+        content:
+          type: string
+          description: Generated response content
+          example: "Here are some great activities for families with young children..."
+        model:
+          type: string
+          description: The model used for generation
+          example: "gpt-3.5-turbo"
+        tokens:
+          type: object
+          description: Token usage information
+          required:
+            - prompt
+            - completion
+            - total
+          properties:
+            prompt:
+              type: integer
+              description: Number of tokens in the prompt
+              example: 45
+            completion:
+              type: integer
+              description: Number of tokens in the completion
+              example: 150
+            total:
+              type: integer
+              description: Total number of tokens used
+              example: 195
+
+    ModelList:
+      type: object
+      required:
+        - openai
+        - ollama
+      properties:
+        openai:
+          type: array
+          description: Available OpenAI models
+          items:
+            type: string
+          example: ["gpt-3.5-turbo", "gpt-4"]
+        ollama:
+          type: array
+          description: Available Ollama models
+          items:
+            type: string
+          example: ["llama2", "mistral"]
+
+    ActivityRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: The specific request for activity suggestions
+          example: "We want outdoor activities for a rainy day"
+        family_members:
+          type: array
+          description: List of family members with their ages
+          items:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                example: "Emma"
+              age:
+                type: integer
+                example: 7
+        preferences:
+          type: array
+          description: Family activity preferences
+          items:
+            type: string
+          example: ["educational", "creative", "physical"]
+        time_available:
+          type: integer
+          description: Time available in minutes
+          example: 120
+
+    ActivityResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: array
+          description: List of activity suggestions
+          items:
+            type: object
+            required:
+              - title
+              - description
+            properties:
+              title:
+                type: string
+                example: "Indoor Scavenger Hunt"
+              description:
+                type: string
+                example: "Create a list of items for everyone to find around the house."
+              estimated_time:
+                type: integer
+                description: Estimated time in minutes
+                example: 45
+              suitable_for:
+                type: array
+                items:
+                  type: string
+                example: ["all ages", "children"]
+        rationale:
+          type: string
+          description: Explanation of why these activities were suggested
+          example: "These activities are selected because they can be done indoors and are suitable for the ages of your family members."
+
+    ScheduleRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: The specific request for schedule help
+          example: "Help me organize our weekend activities"
+        events:
+          type: array
+          description: Current scheduled events
+          items:
+            type: object
+            required:
+              - title
+              - date
+            properties:
+              title:
+                type: string
+                example: "Soccer practice"
+              date:
+                type: string
+                format: date-time
+                example: "2025-06-01T16:00:00Z"
+              duration:
+                type: integer
+                description: Duration in minutes
+                example: 90
+              person:
+                type: string
+                example: "Emma"
+        family_members:
+          type: array
+          items:
+            type: string
+          example: ["Emma", "Jack", "Mom", "Dad"]
+
+    ScheduleResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: string
+          description: Suggestions for organizing the schedule
+          example: "Based on your events, I recommend the following arrangement..."
+        conflicts:
+          type: array
+          description: Potential schedule conflicts
+          items:
+            type: object
+            properties:
+              events:
+                type: array
+                items:
+                  type: string
+                example: ["Soccer practice", "Piano lessons"]
+              time:
+                type: string
+                format: date-time
+                example: "2025-06-01T16:00:00Z"
+              resolution:
+                type: string
+                example: "Consider moving piano lessons to Tuesday"
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Failed to generate completion"
+        code:
+          type: string
+          description: Error code
+          example: "RATE_LIMIT_EXCEEDED"
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "API key authentication. Format: 'Bearer YOUR_API_KEY'"
+
+security:
+  - ApiKeyAuth: []
