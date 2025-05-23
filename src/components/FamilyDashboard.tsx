@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import SchoolPlatforms from './SchoolPlatforms';
 import { dataService } from '../services/data-persistence-mcp';
 import { familyMemoryService } from '../services/family-memory';
+import { ChoreCreationRequest } from '../services/ai-chore-toolkit';
 
 interface FamilyDashboardProps {
   onPageChange?: (page: string) => void;
+  onAIChoresCreated?: (chores: ChoreCreationRequest[]) => void;
 }
 
-const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
+const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, onAIChoresCreated }, ref) => {
   // State for storing all chore entries
   const [choreEntries, setChoreEntries] = useState<any[]>([]);
   // States for form inputs
@@ -100,6 +102,18 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     
     loadData();
   }, []);
+
+  // Expose the chore creation handler
+  useEffect(() => {
+    if (onPageChange) {
+      onPageChange(activeTab);
+    }
+  }, [activeTab, onPageChange]);
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    handleAIChoreCreation
+  }));
   
   // Save chore entries to server when they change (after initial load)
   useEffect(() => {
@@ -187,6 +201,61 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     // Clear the form
     setPersonName('');
     setChoreName('');
+  };
+
+  // Handle AI-created chores
+  const handleAIChoreCreation = async (chores: ChoreCreationRequest[]) => {
+    console.log('Received AI chores:', chores);
+    
+    for (const chore of chores) {
+      // Add to point values if not exists
+      if (chore.pointValue && !pointValues[chore.choreName]) {
+        const updatedPointValues = {
+          ...pointValues,
+          [chore.choreName]: chore.pointValue
+        };
+        setPointValues(updatedPointValues);
+        await dataService.savePointValues(updatedPointValues);
+      }
+      
+      // Add chore entry if assigned to someone
+      if (chore.assignedTo) {
+        const newEntry = {
+          id: Date.now() + Math.random(), // Unique ID
+          person: chore.assignedTo,
+          chore: chore.choreName,
+          timestamp: new Date().toLocaleString(),
+          points: chore.pointValue || pointValues[chore.choreName] || 1,
+          frequency: chore.frequency || 'weekly',
+          category: chore.category || 'other'
+        };
+        
+        setChoreEntries(prev => [...prev, newEntry]);
+        
+        // Add to family members if needed
+        if (!familyMembers.includes(chore.assignedTo)) {
+          setFamilyMembers(prev => [...prev, chore.assignedTo!]);
+        }
+        
+        // Store AI memory
+        try {
+          await familyMemoryService.storeMemory({
+            content: `AI created chore "${chore.choreName}" for ${chore.assignedTo} worth ${chore.pointValue} points`,
+            category: 'chores',
+            tags: ['ai-created', 'setup', chore.category || 'general'],
+            relatedMembers: [chore.assignedTo],
+            priority: 'medium'
+          }, 'default-family', 'AI Assistant');
+        } catch (error) {
+          console.error('Failed to store AI chore memory:', error);
+        }
+      }
+    }
+    
+    // Notify parent component
+    if (onAIChoresCreated) {
+      onAIChoresCreated(chores);
+    }
   };
   
   // Handle assignment form submission
@@ -1106,6 +1175,6 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
       {activeTab.startsWith('calendar') && renderCalendarTab()}
     </div>
   );
-};
+});
 
 export default FamilyDashboard;

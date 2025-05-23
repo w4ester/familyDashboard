@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import FamilyDashboard from './components/FamilyDashboard';
 import WelcomePage from './components/WelcomePage';
@@ -8,6 +8,7 @@ import AiGuideWithOllama from './components/AiGuideWithOllama';
 import McpDashboard from './components/McpDashboard';
 import LoginPage from './components/LoginPage';
 import FamilyAI from './components/FamilyAI';
+import { ChoreCreationRequest } from './services/ai-chore-toolkit';
 
 function App() {
   const [showLogin, setShowLogin] = useState(true);
@@ -16,6 +17,7 @@ function App() {
   const [userName, setUserName] = useState('');
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const dashboardRef = useRef<any>(null);
   
   // Check if user is logged in and has completed onboarding
   useEffect(() => {
@@ -67,6 +69,12 @@ function App() {
     setCurrentPage(page);
   };
 
+  const handleChoreCreated = (chores: ChoreCreationRequest[]) => {
+    console.log('App received created chores:', chores);
+    // The FamilyDashboard will handle the actual chore creation
+    // through the onAIChoresCreated callback
+  };
+
   if (showLogin) {
     return <LoginPage onLogin={handleLogin} />;
   }
@@ -86,16 +94,21 @@ function App() {
   
   return (
     <div className="App">
-      <FamilyDashboard onPageChange={handlePageChange} />
+      <FamilyDashboard 
+        ref={dashboardRef}
+        onPageChange={handlePageChange}
+        onAIChoresCreated={handleChoreCreated}
+      />
       
-      {/* Enhanced Family AI with Memory Integration */}
-      <FamilyAI 
-        familyId="default-family" // You can make this dynamic based on family ID
-        userId={userName || 'current-user'}
+      {/* AI Guide with Ollama Integration */}
+      <AiGuideWithOllama 
+        currentPage={currentPage}
         userName={userName}
-        onMemoryCreated={(memory) => {
-          console.log('New family memory created:', memory);
-          // You can add any additional handling here
+        familyMembers={familyMembers}
+        onChoreCreated={(chores) => {
+          if (dashboardRef.current && dashboardRef.current.handleAIChoreCreation) {
+            dashboardRef.current.handleAIChoreCreation(chores);
+          }
         }}
       />
       
