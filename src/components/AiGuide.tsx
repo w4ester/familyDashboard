@@ -87,10 +87,10 @@ const AiGuide: React.FC<AiGuideProps> = ({
 
   const generatePageHelp = async () => {
     setIsLoading(true);
-    const pageInfo = pageHelp[currentPage] || { title: 'Dashboard', tips: [] };
+    const pageInfo = pageHelp[currentPage as keyof typeof pageHelp] || { title: 'Dashboard', tips: [] };
     
     try {
-      const prompt = `I'm ${userName} on the ${pageInfo.title} page. Give me a fun, encouraging introduction to this feature in 2-3 sentences. Include one specific tip.`;
+      // const prompt = `I'm ${userName} on the ${pageInfo.title} page. Give me a fun, encouraging introduction to this feature in 2-3 sentences. Include one specific tip.`;
       
       // const response = await openaiApi.chatCompletion({
       //   prompt,
@@ -118,7 +118,7 @@ const AiGuide: React.FC<AiGuideProps> = ({
     setIsLoading(true);
     try {
       const context = `User is on the ${currentPage} page of the family dashboard. Family members: ${familyMembers.join(', ')}`;
-      const prompt = `${userName} asks: "${userQuestion}". ${context}`;
+      // const prompt = `${userName} asks: "${userQuestion}". ${context}`;
       
       // const response = await openaiApi.chatCompletion({
       //   prompt,
@@ -129,7 +129,8 @@ const AiGuide: React.FC<AiGuideProps> = ({
       // });
       
       // For now, use a fallback response
-      const response = { content: `Great question, ${userName}! 🌟\n\nBased on what you asked about "${userQuestion}", here's my advice:\n\nThis feature helps you ${pageInfo.tips[0].toLowerCase()} You can also ${pageInfo.tips[1]?.toLowerCase() || 'explore more options in the menu'}\n\nIs there anything else you'd like to know? I'm here to help! 😊` };
+      const currentPageInfo = pageHelp[currentPage as keyof typeof pageHelp] || { title: 'Dashboard', tips: [] };
+      const response = { content: `Great question, ${userName}! 🌟\n\nBased on what you asked about "${userQuestion}", here's my advice:\n\nThis feature helps you ${currentPageInfo.tips[0]?.toLowerCase() || 'manage your family dashboard'} You can also ${currentPageInfo.tips[1]?.toLowerCase() || 'explore more options in the menu'}\n\nIs there anything else you'd like to know? I'm here to help! 😊` };
       
       setMessage(response.content);
       setUserQuestion('');
@@ -157,7 +158,7 @@ const AiGuide: React.FC<AiGuideProps> = ({
       {!isOpen && (
         <button
           onClick={toggleOpen}
-          className="fixed bottom-8 right-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full p-4 shadow-2xl hover:scale-110 transform transition-all animate-bounce"
+          className="fixed bottom-8 right-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200"
         >
           <div className="flex items-center">
             <span className="text-3xl mr-2">{currentExpression}</span>
@@ -170,7 +171,7 @@ const AiGuide: React.FC<AiGuideProps> = ({
       {isOpen && (
         <div className={`fixed ${isMiniMode ? 'bottom-4 right-4 w-80' : 'bottom-0 right-0 w-96 h-96'} bg-white rounded-t-3xl shadow-2xl transform transition-all ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-t-3xl flex justify-between items-center">
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-t-3xl flex justify-between items-center">
             <div className="flex items-center">
               <span className="text-3xl mr-3">{currentExpression}</span>
               <div>
@@ -214,19 +215,19 @@ const AiGuide: React.FC<AiGuideProps> = ({
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <button
                   onClick={() => setUserQuestion("How do I use this page?")}
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   📖 How to use
                 </button>
                 <button
                   onClick={() => setUserQuestion("Show me tips")}
-                  className="bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   💡 Pro tips
                 </button>
                 <button
                   onClick={() => setUserQuestion("What's fun here?")}
-                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-rose-100 hover:bg-rose-200 text-rose-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   🎮 Fun features
                 </button>
@@ -246,11 +247,11 @@ const AiGuide: React.FC<AiGuideProps> = ({
                   onChange={(e) => setUserQuestion(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAskQuestion()}
                   placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-2 border-2 border-purple-300 rounded-full focus:border-purple-500 focus:outline-none"
+                  className="flex-1 px-4 py-2 border-2 border-amber-300 rounded-full focus:border-orange-500 focus:outline-none transition-colors"
                 />
                 <button
                   onClick={handleAskQuestion}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors"
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-2 rounded-full hover:from-amber-600 hover:to-orange-600 transition-colors"
                 >
                   Ask
                 </button>

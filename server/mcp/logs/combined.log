@@ -1,0 +1,28 @@
+2025-05-14T00:33:09.680Z info: Ensured directory exists: data
+2025-05-14T00:33:09.681Z info: Ensured directory exists: uploads
+2025-05-14T00:33:09.699Z info: Allowed directories: ./data, ./uploads
+2025-05-14T00:33:09.699Z info: Read-only mode: false
+2025-05-14T00:33:09.699Z info: HTTP Server running on port 3030
+2025-05-14T00:33:09.700Z info: Access at: http://localhost:3030
+2025-05-14T00:33:09.700Z info: HTTPS Server running on port 3443
+2025-05-14T00:33:09.700Z info: Access at: https://localhost:3443
+2025-05-14T00:33:09.700Z info: Using self-signed certificate - you may need to accept security warnings in your browser
+2025-05-14T00:44:24.843Z info: Ensured directory exists: data
+2025-05-14T00:44:24.844Z info: Ensured directory exists: uploads
+2025-05-14T00:44:24.861Z info: Allowed directories: ./data, ./uploads
+2025-05-14T00:44:24.861Z info: Read-only mode: false
+2025-05-14T00:44:24.861Z info: HTTP Server running on port 3030
+2025-05-14T00:44:24.861Z info: Access at: http://localhost:3030
+2025-05-14T00:44:24.861Z info: HTTPS Server running on port 3443
+2025-05-14T00:44:24.861Z info: Access at: https://localhost:3443
+2025-05-14T00:44:24.861Z info: Using self-signed certificate - you may need to accept security warnings in your browser
+2025-05-14T03:13:33.439Z info: Ensured directory exists: data
+2025-05-14T03:13:33.440Z info: Ensured directory exists: uploads
+2025-05-14T03:13:33.457Z info: Allowed directories: ./data, ./uploads
+2025-05-14T03:13:33.457Z info: Read-only mode: false
+2025-05-14T03:13:33.457Z info: HTTP Server running on port 3030
+2025-05-14T03:13:33.457Z info: Access at: http://localhost:3030
+2025-05-14T03:13:33.457Z info: HTTPS Server running on port 3443
+2025-05-14T03:13:33.457Z info: Access at: https://localhost:3443
+2025-05-14T03:13:33.457Z info: Using self-signed certificate - you may need to accept security warnings in your browser
+2025-05-14T03:14:22.701Z info: SIGTERM received, shutting down gracefully

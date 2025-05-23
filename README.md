@@ -10,6 +10,7 @@ A comprehensive family organization tool with AI-powered features for managing s
 - **File Gallery**: Store and organize family documents
 - **School Platforms**: Quick access to educational websites
 - **AI Integration**: Smart tools for activity suggestions and schedule optimization
+- **Local Data Storage**: All data stored persistently on your computer (no cloud dependency)
 
 ## Quick Start
 
@@ -17,11 +18,13 @@ A comprehensive family organization tool with AI-powered features for managing s
 # Install dependencies
 npm install
 
-# Start the application
-npm start
+# Start the application with local data storage
+./start-servers.sh
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+This will start both the local data server and the React app. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+
+For more details on data persistence, see [DATA_PERSISTENCE.md](./DATA_PERSISTENCE.md).
 
 ## Smart Tools (AI Features)
 

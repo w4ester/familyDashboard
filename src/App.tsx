@@ -4,27 +4,33 @@ import FamilyDashboard from './components/FamilyDashboard';
 import WelcomePage from './components/WelcomePage';
 import OnboardingFlow from './components/OnboardingFlow';
 import AiGuide from './components/AiGuide';
+import AiGuideWithOllama from './components/AiGuideWithOllama';
+import McpDashboard from './components/McpDashboard';
+import LoginPage from './components/LoginPage';
+import FamilyAI from './components/FamilyAI';
 
 function App() {
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showLogin, setShowLogin] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState('');
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
   
-  // Check if user has completed onboarding
+  // Check if user is logged in and has completed onboarding
   useEffect(() => {
+    // Clear localStorage for demo purposes - remove this line for production
+    localStorage.clear();
+    
     const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
     const savedUserName = localStorage.getItem('userName');
     const savedFamilyMembers = localStorage.getItem('familyMembers');
     
-    if (hasCompletedOnboarding === 'true') {
+    if (hasCompletedOnboarding === 'true' && savedUserName) {
+      setShowLogin(false);
       setShowWelcome(false);
       setShowOnboarding(false);
-      
-      if (savedUserName) {
-        setUserName(savedUserName);
-      }
+      setUserName(savedUserName);
       
       if (savedFamilyMembers) {
         setFamilyMembers(JSON.parse(savedFamilyMembers));
@@ -32,6 +38,11 @@ function App() {
     }
   }, []);
   
+  const handleLogin = () => {
+    setShowLogin(false);
+    setShowWelcome(true);
+  };
+
   const handleGetStarted = () => {
     if (localStorage.getItem('hasCompletedOnboarding') === 'true') {
       setShowWelcome(false);
@@ -56,6 +67,10 @@ function App() {
     setCurrentPage(page);
   };
 
+  if (showLogin) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   if (showWelcome) {
     return <WelcomePage onGetStarted={handleGetStarted} familyMembers={familyMembers} />;
   }
@@ -72,11 +87,20 @@ function App() {
   return (
     <div className="App">
       <FamilyDashboard onPageChange={handlePageChange} />
-      <AiGuide 
-        currentPage={currentPage}
+      
+      {/* Enhanced Family AI with Memory Integration */}
+      <FamilyAI 
+        familyId="default-family" // You can make this dynamic based on family ID
+        userId={userName || 'current-user'}
         userName={userName}
-        familyMembers={familyMembers}
+        onMemoryCreated={(memory) => {
+          console.log('New family memory created:', memory);
+          // You can add any additional handling here
+        }}
       />
+      
+      {/* Optional: Add MCP Dashboard as a tab */}
+      {currentPage === 'mcp' && <McpDashboard />}
     </div>
   );
 }

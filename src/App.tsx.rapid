@@ -1,0 +1,52 @@
+import React, { useState } from 'react';
+import './App.css';
+import FamilyDashboard from './components/FamilyDashboard';
+import { QuickStart } from './components/QuickStart';
+import { localFirstStorage } from './infrastructure/storage/localFirstStorage';
+
+function App() {
+  const [isQuickStartMode, setIsQuickStartMode] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Check if we have existing data
+  React.useEffect(() => {
+    const checkData = async () => {
+      const data = await localFirstStorage.loadData();
+      if (data) {
+        setDataLoaded(true);
+        setIsQuickStartMode(false);
+      }
+    };
+    checkData();
+  }, []);
+
+  if (isQuickStartMode && !dataLoaded) {
+    return <QuickStart />;
+  }
+
+  return (
+    <div className="App">
+      <div className="fixed top-4 right-4 flex gap-2">
+        <button
+          onClick={async () => {
+            const blob = await localFirstStorage.exportData('json');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `family-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+          }}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Export Data
+        </button>
+        <div className="bg-amber-100 px-4 py-2 rounded">
+          🔒 Local Storage Only
+        </div>
+      </div>
+      <FamilyDashboard />
+    </div>
+  );
+}
+
+export default App;

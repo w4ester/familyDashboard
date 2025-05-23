@@ -162,7 +162,7 @@ const SchoolPlatforms: React.FC<SchoolPlatformsProps> = ({ familyMembers }) => {
   return (
     <div>
       {/* Add new platform form */}
-      <div className="bg-green-50 p-4 rounded-lg mb-6">
+      <div className="bg-amber-50 p-4 rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-2">Add School Platform</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -239,7 +239,7 @@ const SchoolPlatforms: React.FC<SchoolPlatformsProps> = ({ familyMembers }) => {
         </div>
         <button 
           onClick={handlePlatformSubmit} 
-          className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+          className="bg-amber-500 text-white py-2 px-4 rounded hover:bg-amber-600"
           disabled={!personName || !platformName || !platformUrl || !isValidUrl(platformUrl)}
         >
           Add Platform
@@ -284,7 +284,7 @@ const SchoolPlatforms: React.FC<SchoolPlatformsProps> = ({ familyMembers }) => {
           <div className="space-y-6">
             {Object.entries(getPlatformsByPerson()).map(([person, personPlatforms]) => (
               <div key={person} className="bg-white rounded-lg shadow-sm border">
-                <div className="bg-green-50 px-4 py-3 rounded-t-lg border-b">
+                <div className="bg-amber-50 px-4 py-3 rounded-t-lg border-b">
                   <h3 className="font-semibold">{person}'s Platforms</h3>
                 </div>
                 <div className="divide-y">
@@ -293,7 +293,7 @@ const SchoolPlatforms: React.FC<SchoolPlatformsProps> = ({ familyMembers }) => {
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
                           <h4 className="font-medium">{platform.platformName}</h4>
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded ml-2">
+                          <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded ml-2">
                             {platform.category}
                           </span>
                         </div>
@@ -304,7 +304,7 @@ const SchoolPlatforms: React.FC<SchoolPlatformsProps> = ({ familyMembers }) => {
                               href={platform.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline flex items-center"
+                              className="text-amber-600 hover:underline flex items-center"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

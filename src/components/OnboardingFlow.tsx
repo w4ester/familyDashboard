@@ -94,21 +94,21 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onAddFamily
       case 0:
         return (
           <div className="text-center space-y-6">
-            <div className="text-8xl animate-bounce">{step.icon}</div>
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="text-8xl">{step.icon}</div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
               {step.title}
             </h2>
             <p className="text-xl text-gray-700">{step.description}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-              <div className="bg-blue-100 p-4 rounded-xl">
+              <div className="bg-amber-100 p-4 rounded-xl">
                 <span className="text-3xl">📅</span>
                 <p className="mt-2 font-medium">Calendar</p>
               </div>
-              <div className="bg-green-100 p-4 rounded-xl">
+              <div className="bg-emerald-100 p-4 rounded-xl">
                 <span className="text-3xl">✅</span>
                 <p className="mt-2 font-medium">Chores</p>
               </div>
-              <div className="bg-purple-100 p-4 rounded-xl">
+              <div className="bg-rose-100 p-4 rounded-xl">
                 <span className="text-3xl">📚</span>
                 <p className="mt-2 font-medium">School</p>
               </div>
@@ -207,7 +207,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onAddFamily
                   {addedMembers.map((member, index) => (
                     <div key={index} className="bg-gray-100 p-3 rounded-lg flex items-center justify-between">
                       <div className="flex items-center">
-                        <span className="text-2xl mr-3">{roleEmojis[member.role]}</span>
+                        <span className="text-2xl mr-3">{roleEmojis[member.role as keyof typeof roleEmojis]}</span>
                         <div>
                           <p className="font-medium">{member.name}</p>
                           {member.age && <p className="text-sm text-gray-600">Age: {member.age}</p>}
@@ -224,8 +224,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onAddFamily
       case 3:
         return (
           <div className="text-center space-y-6">
-            <div className="text-8xl animate-bounce">{step.icon}</div>
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            <div className="text-8xl">{step.icon}</div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               {step.title}
             </h2>
             <p className="text-xl text-gray-700">{step.description}</p>
@@ -268,7 +268,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onAddFamily
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-8">

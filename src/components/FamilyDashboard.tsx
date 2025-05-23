@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SchoolPlatforms from './SchoolPlatforms';
+import { dataService } from '../services/data-persistence-mcp';
+import { familyMemoryService } from '../services/family-memory';
 
 interface FamilyDashboardProps {
   onPageChange?: (page: string) => void;
@@ -40,68 +42,102 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
   const [newFamilyMember, setNewFamilyMember] = useState('');
   
-  // Load data from localStorage when component mounts
+  // State to track if data has been loaded
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Load data from the data service when component mounts
   useEffect(() => {
-    const savedEntries = localStorage.getItem('choreEntries');
-    const savedPointValues = localStorage.getItem('pointValues');
-    const savedAssignments = localStorage.getItem('assignments');
-    const savedEvents = localStorage.getItem('events');
-    const savedFamilyMembers = localStorage.getItem('familyMembers');
+    const loadData = async () => {
+      try {
+        // Load all data from the data service
+        const savedEntries = await dataService.loadChoreEntries();
+        const savedPointValues = await dataService.loadPointValues();
+        const savedAssignments = await dataService.loadAssignments();
+        const savedEvents = await dataService.loadEvents();
+        const savedFamilyMembers = await dataService.loadFamilyMembers();
+        
+        // Only update state if we have saved data
+        if (savedEntries) {
+          setChoreEntries(savedEntries);
+        }
+        
+        if (savedPointValues) {
+          setPointValues(savedPointValues);
+        } else {
+          // Default point values if none exist
+          const defaultValues = {
+            'Dishes': 2,
+            'Vacuum': 3,
+            'Take out trash': 1,
+            'Make bed': 1,
+            'Laundry': 3,
+            'Clean bathroom': 5
+          };
+          setPointValues(defaultValues);
+          await dataService.savePointValues(defaultValues);
+        }
+        
+        if (savedAssignments) {
+          setAssignments(savedAssignments);
+        }
+        
+        if (savedEvents) {
+          setEvents(savedEvents);
+        }
+        
+        if (savedFamilyMembers) {
+          setFamilyMembers(savedFamilyMembers);
+        }
+        
+        // Mark data as loaded after loading
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Still mark as loaded even on error to enable saving
+        setDataLoaded(true);
+      }
+    };
     
-    if (savedEntries) {
-      setChoreEntries(JSON.parse(savedEntries));
-    }
-    
-    if (savedPointValues) {
-      setPointValues(JSON.parse(savedPointValues));
-    } else {
-      // Default point values if none exist
-      setPointValues({
-        'Dishes': 2,
-        'Vacuum': 3,
-        'Take out trash': 1,
-        'Make bed': 1,
-        'Laundry': 3,
-        'Clean bathroom': 5
-      });
-    }
-    
-    if (savedAssignments) {
-      setAssignments(JSON.parse(savedAssignments));
-    }
-    
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    }
-    
-    if (savedFamilyMembers) {
-      setFamilyMembers(JSON.parse(savedFamilyMembers));
-    }
+    loadData();
   }, []);
+  
+  // Save chore entries to server when they change (after initial load)
+  useEffect(() => {
+    if (dataLoaded && choreEntries.length >= 0) {
+      dataService.saveChoreEntries(choreEntries).catch(console.error);
+    }
+  }, [choreEntries, dataLoaded]);
+  
+  // Save point values to server when they change (after initial load)
+  useEffect(() => {
+    if (dataLoaded && Object.keys(pointValues).length > 0) {
+      dataService.savePointValues(pointValues).catch(console.error);
+    }
+  }, [pointValues, dataLoaded]);
+  
+  // Save assignments to server when they change (after initial load)
+  useEffect(() => {
+    if (dataLoaded && assignments.length >= 0) {
+      dataService.saveAssignments(assignments).catch(console.error);
+    }
+  }, [assignments, dataLoaded]);
+  
+  // Save events to server when they change (after initial load)
+  useEffect(() => {
+    if (dataLoaded && events.length >= 0) {
+      dataService.saveEvents(events).catch(console.error);
+    }
+  }, [events, dataLoaded]);
+  
+  // Save family members to server when they change (after initial load)
+  useEffect(() => {
+    if (dataLoaded && familyMembers.length >= 0) {
+      dataService.saveFamilyMembers(familyMembers).catch(console.error);
+    }
+  }, [familyMembers, dataLoaded]);
 
-  // Save data to localStorage whenever relevant state changes
-  useEffect(() => {
-    localStorage.setItem('choreEntries', JSON.stringify(choreEntries));
-  }, [choreEntries]);
-  
-  useEffect(() => {
-    localStorage.setItem('pointValues', JSON.stringify(pointValues));
-  }, [pointValues]);
-  
-  useEffect(() => {
-    localStorage.setItem('assignments', JSON.stringify(assignments));
-  }, [assignments]);
-  
-  useEffect(() => {
-    localStorage.setItem('events', JSON.stringify(events));
-  }, [events]);
-  
-  useEffect(() => {
-    localStorage.setItem('familyMembers', JSON.stringify(familyMembers));
-  }, [familyMembers]);
-
-  // Handle chore form submission
-  const handleChoreSubmit = () => {
+  // Handle chore form submission with AI memory integration
+  const handleChoreSubmit = async () => {
     if (personName.trim() === '' || choreName.trim() === '') {
       alert('Please enter both a name and a chore!');
       return;
@@ -125,6 +161,27 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     // Add person to family members if not already in the list
     if (!familyMembers.includes(personName.trim())) {
       setFamilyMembers([...familyMembers, personName.trim()]);
+    }
+    
+    // 🚀 NEW: Learn from chore completion using AI memory
+    try {
+      await familyMemoryService.learnFromChoreCompletion(
+        newEntry.id.toString(),
+        personName.trim(),
+        'default-family'
+      );
+      
+      // Store additional memory about the achievement
+      await familyMemoryService.storeMemory({
+        content: `${personName.trim()} completed "${choreName.trim()}" and earned ${pointValue} points! 🎉`,
+        category: 'chores',
+        tags: ['completion', 'achievement', choreName.trim().toLowerCase()],
+        relatedMembers: [personName.trim()],
+        priority: pointValue >= 5 ? 'high' : 'medium'
+      }, 'default-family', personName.trim());
+      
+    } catch (error) {
+      console.error('Failed to store chore memory:', error);
     }
     
     // Clear the form
@@ -375,7 +432,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
   // Render the admin panel
   const renderAdminPanel = () => {
     return (
-      <div className="bg-purple-50 p-4 rounded-lg mb-6 border border-purple-200">
+      <div className="bg-amber-50 p-4 rounded-lg mb-6 border border-amber-200">
         <h2 className="text-lg font-semibold mb-2">Admin: Chore Point Values</h2>
         
         <div className="mb-4 flex flex-wrap gap-2">
@@ -396,7 +453,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           />
           <button 
             onClick={addPointValue} 
-            className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
+            className="bg-amber-500 text-white py-2 px-4 rounded hover:bg-amber-600"
           >
             Set Points
           </button>
@@ -407,7 +464,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
             <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
               <div>
                 <span className="font-medium">{chore}</span>
-                <span className="ml-2 text-purple-700">{points} pts</span>
+                <span className="ml-2 text-amber-700">{points} pts</span>
               </div>
               <button 
                 onClick={() => removePointValue(chore)}
@@ -429,7 +486,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
   // Render family management tab
   const renderFamilyTab = () => {
     return (
-      <div className="bg-blue-50 p-4 rounded-lg mb-6">
+      <div className="bg-orange-50 p-4 rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-2">Manage Family Members</h2>
         <div className="flex flex-wrap gap-2 mb-4">
           <input
@@ -475,7 +532,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     return (
       <>
         {/* Add new chore form */}
-        <div className="bg-blue-50 p-4 rounded-lg mb-6">
+        <div className="bg-orange-50 p-4 rounded-lg mb-6">
           <h2 className="text-lg font-semibold mb-2">Add New Chore</h2>
           <div className="flex flex-wrap gap-2">
             <select
@@ -503,13 +560,13 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
             </datalist>
             <button 
               onClick={handleChoreSubmit} 
-              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+              className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600"
             >
               Add Entry
             </button>
           </div>
           {choreName && pointValues[choreName] && (
-            <div className="mt-2 text-blue-700">
+            <div className="mt-2 text-orange-700">
               This chore is worth <strong>{pointValues[choreName]} points</strong>!
             </div>
           )}
@@ -591,7 +648,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
                       <tr key={entry.id} className="border-b">
                         <td className="p-3">{entry.person}</td>
                         <td className="p-3">{entry.chore}</td>
-                        <td className="p-3 font-bold text-blue-700">{entry.points || 1}</td>
+                        <td className="p-3 font-bold text-orange-700">{entry.points || 1}</td>
                         <td className="p-3 text-sm">{entry.timestamp}</td>
                         <td className="p-3">
                           <button 
@@ -620,7 +677,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     return (
       <>
         {/* Add new assignment form */}
-        <div className="bg-indigo-50 p-4 rounded-lg mb-6">
+        <div className="bg-rose-50 p-4 rounded-lg mb-6">
           <h2 className="text-lg font-semibold mb-2">Add New School Assignment</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -668,7 +725,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           </div>
           <button 
             onClick={handleAssignmentSubmit} 
-            className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
+            className="bg-rose-500 text-white py-2 px-4 rounded hover:bg-rose-600"
           >
             Add Assignment
           </button>
@@ -827,7 +884,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
     return (
       <>
         {/* Add new event form */}
-        <div className="bg-cyan-50 p-4 rounded-lg mb-6">
+        <div className="bg-amber-50 p-4 rounded-lg mb-6">
           <h2 className="text-lg font-semibold mb-2">Add New Calendar Event</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -874,7 +931,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           </div>
           <button 
             onClick={handleEventSubmit} 
-            className="bg-cyan-500 text-white py-2 px-4 rounded hover:bg-cyan-600"
+            className="bg-amber-500 text-white py-2 px-4 rounded hover:bg-amber-600"
           >
             Add to Calendar
           </button>
@@ -937,7 +994,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
                       return (
                         <div key={event.id} className="p-3 bg-white flex items-start hover:bg-gray-50">
                           <div className="text-center mr-4 min-w-14">
-                            <div className="font-bold text-cyan-700">{formattedDate}</div>
+                            <div className="font-bold text-amber-700">{formattedDate}</div>
                             {event.time && (
                               <div className="text-xs text-gray-500 mt-1">{event.time}</div>
                             )}
@@ -974,7 +1031,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
         <h1 className="text-2xl font-bold text-center">Family Dashboard</h1>
         <button 
           onClick={() => setShowAdmin(!showAdmin)}
-          className="bg-purple-500 text-white py-1 px-3 rounded text-sm hover:bg-purple-600"
+          className="bg-amber-500 text-white py-1 px-3 rounded text-sm hover:bg-amber-600"
         >
           {showAdmin ? 'Hide Admin' : 'Show Admin'}
         </button>
@@ -986,7 +1043,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
       {/* Navigation Tabs */}
       <div className="flex border-b mb-6 overflow-x-auto">
         <button
-          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'chores' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'chores' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('chores');
             onPageChange && onPageChange('chores');
@@ -995,7 +1052,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           Chores & Points
         </button>
         <button
-          className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('assignments') ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('assignments') ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('assignments');
             onPageChange && onPageChange('assignments');
@@ -1004,7 +1061,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           School Assignments
         </button>
         <button
-          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'platforms' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'platforms' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('platforms');
             onPageChange && onPageChange('platforms');
@@ -1013,7 +1070,7 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           School Platforms
         </button>
         <button
-          className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('calendar') ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('calendar') ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('calendar');
             onPageChange && onPageChange('calendar');
@@ -1022,13 +1079,22 @@ const FamilyDashboard: React.FC<FamilyDashboardProps> = ({ onPageChange }) => {
           Calendar
         </button>
         <button
-          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'family' ? 'border-b-2 border-blue-500 font-semibold' : 'text-gray-500'}`}
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'family' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('family');
             onPageChange && onPageChange('family');
           }}
         >
           Family
+        </button>
+        <button
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'mcp' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
+          onClick={() => {
+            setActiveTab('mcp');
+            onPageChange && onPageChange('mcp');
+          }}
+        >
+          MCP Services
         </button>
       </div>
       

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { mcpApi } from '../services/mcp-api';
+import { dataService } from '../services/data-persistence';
 
 interface FileEntry {
   id: number;
   name: string;
   type: string;
-  size: number;
-  dataUrl: string;
+  path: string;
   person?: string;
   category?: string;
   tags?: string[];
@@ -17,9 +18,10 @@ interface FileGalleryProps {
   familyMembers: string[];
 }
 
-const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
+const FileGalleryUpdated: React.FC<FileGalleryProps> = ({ familyMembers }) => {
   // State for storing file entries
   const [files, setFiles] = useState<FileEntry[]>([]);
+  const [serverFiles, setServerFiles] = useState<any[]>([]);
   
   // States for form inputs
   const [personName, setPersonName] = useState('');
@@ -29,6 +31,7 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
   
   // State for drag and drop functionality
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   
   // State for filtering files
   const [filterPerson, setFilterPerson] = useState('');
@@ -52,19 +55,45 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
     'Other'
   ];
   
-  // Load data from localStorage when component mounts
+  // File storage directory on server
+  const FILES_DIR = 'family-data/files';
+  const METADATA_FILE = 'family-data/files-metadata.json';
+  
+  // Load file metadata when component mounts
   useEffect(() => {
-    const savedFiles = localStorage.getItem('familyFiles');
-    
-    if (savedFiles) {
-      setFiles(JSON.parse(savedFiles));
-    }
+    loadFileMetadata();
   }, []);
   
-  // Save data to localStorage whenever files change
-  useEffect(() => {
-    localStorage.setItem('familyFiles', JSON.stringify(files));
-  }, [files]);
+  const loadFileMetadata = async () => {
+    try {
+      // Load metadata from server
+      const metadataContent = await mcpApi.readFile(METADATA_FILE);
+      const metadata = JSON.parse(metadataContent.content);
+      setFiles(metadata);
+      
+      // List actual files on server
+      const fileList = await mcpApi.listFiles(FILES_DIR);
+      setServerFiles(fileList);
+    } catch (error) {
+      console.log('No existing files found, creating new metadata');
+      setFiles([]);
+      // Create files directory
+      try {
+        await mcpApi.createDirectory(FILES_DIR);
+      } catch (err) {
+        console.log('Files directory might already exist');
+      }
+    }
+  };
+  
+  const saveFileMetadata = async (updatedFiles: FileEntry[]) => {
+    try {
+      await mcpApi.writeFile(METADATA_FILE, JSON.stringify(updatedFiles, null, 2));
+      setFiles(updatedFiles);
+    } catch (error) {
+      console.error('Error saving file metadata:', error);
+    }
+  };
   
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,20 +109,39 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
   };
   
   // Process files for storage
-  const processFiles = (selectedFiles: FileList) => {
-    Array.from(selectedFiles).forEach(file => {
-      const reader = new FileReader();
+  const processFiles = async (selectedFiles: FileList) => {
+    setUploadProgress('Uploading files...');
+    
+    const newFiles: FileEntry[] = [];
+    
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
       
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const result = e.target?.result as string;
+      try {
+        setUploadProgress(`Uploading ${file.name} (${i + 1}/${selectedFiles.length})`);
         
-        // Create file entry
+        // Create unique filename
+        const timestamp = Date.now();
+        const uniqueName = `${timestamp}_${file.name}`;
+        const filePath = `${FILES_DIR}/${uniqueName}`;
+        
+        // Read file content
+        const reader = new FileReader();
+        const fileContent = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        // Upload to server
+        await mcpApi.writeFile(filePath, fileContent);
+        
+        // Create metadata entry
         const newFile: FileEntry = {
-          id: Date.now() + Math.floor(Math.random() * 1000),
+          id: timestamp + i,
           name: file.name,
           type: file.type,
-          size: file.size,
-          dataUrl: result,
+          path: filePath,
           person: personName || undefined,
           category: fileCategory || 'Other',
           tags: fileTags ? fileTags.split(',').map(tag => tag.trim()) : undefined,
@@ -101,12 +149,18 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
           dateAdded: new Date().toISOString()
         };
         
-        setFiles(prevFiles => [...prevFiles, newFile]);
-      };
-      
-      // Read the file as Data URL (base64)
-      reader.readAsDataURL(file);
-    });
+        newFiles.push(newFile);
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        setUploadProgress(`Error uploading ${file.name}`);
+      }
+    }
+    
+    // Update metadata
+    const updatedFiles = [...files, ...newFiles];
+    await saveFileMetadata(updatedFiles);
+    
+    setUploadProgress('');
   };
   
   // Handle drag events
@@ -147,22 +201,101 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
   };
   
   // Delete a file entry
-  const deleteFile = (id: number) => {
+  const deleteFile = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this file?')) {
-      setFiles(files.filter(file => file.id !== id));
+      const fileToDelete = files.find(file => file.id === id);
+      if (fileToDelete) {
+        try {
+          // Delete the actual file from server
+          await mcpApi.deleteItem(fileToDelete.path);
+        } catch (error) {
+          console.error('Error deleting file from server:', error);
+        }
+      }
+      
+      // Update metadata
+      const updatedFiles = files.filter(file => file.id !== id);
+      await saveFileMetadata(updatedFiles);
     }
   };
   
-  // Format file size for display
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' bytes';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  // Download a file
+  const downloadFile = async (file: FileEntry) => {
+    try {
+      const fileContent = await mcpApi.readFile(file.path);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = fileContent.content;
+      link.download = file.name;
+      link.click();
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Error downloading file');
+    }
   };
   
-  // Format date for display
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString();
+  // View a file
+  const viewFile = async (file: FileEntry) => {
+    try {
+      const fileContent = await mcpApi.readFile(file.path);
+      
+      // Open in new window
+      const newWindow = window.open();
+      if (newWindow) {
+        if (file.type.startsWith('image/')) {
+          newWindow.document.write(`<img src="${fileContent.content}" style="max-width: 100%; height: auto;">`);
+        } else {
+          newWindow.location.href = fileContent.content;
+        }
+      }
+    } catch (error) {
+      console.error('Error viewing file:', error);
+      alert('Error viewing file');
+    }
+  };
+  
+  // ... rest of the component (filtering, UI rendering) remains the same ...
+  
+  // Check if a file is an image
+  const isImage = (type: string): boolean => {
+    return type.startsWith('image/');
+  };
+  
+  // Get appropriate icon for file type
+  const getFileIcon = (type: string): string => {
+    if (isImage(type)) return '🖼️';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word')) return '📝';
+    if (type.includes('excel')) return '📊';
+    if (type.includes('powerpoint')) return '📑';
+    if (type.includes('text')) return '📃';
+    if (type.includes('audio')) return '🎵';
+    if (type.includes('video')) return '🎬';
+    return '📁';
+  };
+  
+  // Filter files based on criteria
+  const getFilteredFiles = () => {
+    return files.filter(file => {
+      if (filterPerson && file.person !== filterPerson) return false;
+      if (filterCategory && file.category !== filterCategory) return false;
+      if (filterTag && (!file.tags || !file.tags.includes(filterTag))) return false;
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const nameMatch = file.name.toLowerCase().includes(query);
+        const categoryMatch = file.category ? file.category.toLowerCase().includes(query) : false;
+        const tagsMatch = file.tags ? file.tags.some(tag => tag.toLowerCase().includes(query)) : false;
+        const notesMatch = file.notes ? file.notes.toLowerCase().includes(query) : false;
+        
+        if (!(nameMatch || categoryMatch || tagsMatch || notesMatch)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
   };
   
   // Get unique categories from files
@@ -187,79 +320,12 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
     return Array.from(tags).sort();
   };
   
-  // Check if a file is an image
-  const isImage = (type: string): boolean => {
-    return type.startsWith('image/');
-  };
-  
-  // Check if a file is a document
-  const isDocument = (type: string): boolean => {
-    return type.includes('pdf') || type.includes('word') || type.includes('excel') || 
-           type.includes('powerpoint') || type.includes('text');
-  };
-  
-  // Get appropriate icon for file type
-  const getFileIcon = (type: string): string => {
-    if (isImage(type)) return '🖼️';
-    if (type.includes('pdf')) return '📄';
-    if (type.includes('word')) return '📝';
-    if (type.includes('excel')) return '📊';
-    if (type.includes('powerpoint')) return '📑';
-    if (type.includes('text')) return '📃';
-    if (type.includes('audio')) return '🎵';
-    if (type.includes('video')) return '🎬';
-    return '📁';
-  };
-  
-  // Filter files based on person, category, tag, and search query
-  const getFilteredFiles = () => {
-    return files.filter(file => {
-      // Filter by person if specified
-      if (filterPerson && file.person !== filterPerson) {
-        return false;
-      }
-      
-      // Filter by category if specified
-      if (filterCategory && file.category !== filterCategory) {
-        return false;
-      }
-      
-      // Filter by tag if specified
-      if (filterTag && (!file.tags || !file.tags.includes(filterTag))) {
-        return false;
-      }
-      
-      // Filter by search query if specified
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const nameMatch = file.name.toLowerCase().includes(query);
-        const categoryMatch = file.category ? file.category.toLowerCase().includes(query) : false;
-        const tagsMatch = file.tags ? file.tags.some(tag => tag.toLowerCase().includes(query)) : false;
-        const notesMatch = file.notes ? file.notes.toLowerCase().includes(query) : false;
-        
-        if (!(nameMatch || categoryMatch || tagsMatch || notesMatch)) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  };
-  
   // Clear all filters
   const clearFilters = () => {
     setFilterPerson('');
     setFilterCategory('');
     setFilterTag('');
     setSearchQuery('');
-  };
-  
-  // Clear the form inputs
-  const clearForm = () => {
-    setPersonName('');
-    setFileCategory('');
-    setFileTags('');
-    setFileNotes('');
   };
   
   // Check if there are any active filters
@@ -271,7 +337,7 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
     <div>
       {/* File Upload Area */}
       <div className="bg-amber-50 p-4 rounded-lg mb-6">
-        <h2 className="text-lg font-semibold mb-2">Upload Files</h2>
+        <h2 className="text-lg font-semibold mb-2">Upload Files to Your Local Server</h2>
         
         <div 
           className={`border-2 border-dashed rounded-lg p-6 mb-4 text-center transition-colors
@@ -291,7 +357,10 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
           />
           <div className="text-4xl mb-2">📁</div>
           <p className="font-medium">{isDragging ? 'Drop files here' : 'Drag & drop files here, or click to browse'}</p>
-          <p className="text-gray-500 text-sm mt-1">Upload documents, images, and more</p>
+          <p className="text-gray-500 text-sm mt-1">Files will be stored on your local server</p>
+          {uploadProgress && (
+            <p className="text-amber-600 text-sm mt-2">{uploadProgress}</p>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -347,7 +416,7 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
       {/* Files Gallery */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-          <h2 className="text-lg font-semibold">File Gallery</h2>
+          <h2 className="text-lg font-semibold">File Gallery (Stored Locally)</h2>
           
           <div className="flex flex-col sm:flex-row gap-2">
             {/* Search input */}
@@ -417,15 +486,7 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
               <div key={file.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
                 {/* File preview */}
                 <div className="h-40 bg-gray-100 flex items-center justify-center">
-                  {isImage(file.type) ? (
-                    <img 
-                      src={file.dataUrl} 
-                      alt={file.name} 
-                      className="h-full w-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-5xl">{getFileIcon(file.type)}</div>
-                  )}
+                  <div className="text-5xl">{getFileIcon(file.type)}</div>
                 </div>
                 
                 {/* File information */}
@@ -443,7 +504,7 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
                   </div>
                   
                   <div className="text-xs text-gray-500 mb-1">
-                    {formatFileSize(file.size)} • {formatDate(file.dateAdded)}
+                    Added: {new Date(file.dateAdded).toLocaleDateString()}
                   </div>
                   
                   {file.person && (
@@ -482,21 +543,18 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
                   
                   {/* Download and view buttons */}
                   <div className="flex justify-between mt-2">
-                    <a 
-                      href={file.dataUrl} 
-                      download={file.name}
-                      className="text-xs text-blue-600 hover:text-blue-800"
+                    <button 
+                      onClick={() => downloadFile(file)}
+                      className="text-xs text-amber-600 hover:text-amber-800"
                     >
                       Download
-                    </a>
-                    <a 
-                      href={file.dataUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800"
+                    </button>
+                    <button 
+                      onClick={() => viewFile(file)}
+                      className="text-xs text-amber-600 hover:text-amber-800"
                     >
                       View
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -508,4 +566,4 @@ const FileGallery: React.FC<FileGalleryProps> = ({ familyMembers }) => {
   );
 };
 
-export default FileGallery;
+export default FileGalleryUpdated;
