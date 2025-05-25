@@ -3,12 +3,8 @@ import './App.css';
 import FamilyDashboard from './components/FamilyDashboard';
 import WelcomePage from './components/WelcomePage';
 import OnboardingFlow from './components/OnboardingFlow';
-import AiGuide from './components/AiGuide';
-import AiGuideWithOllama from './components/AiGuideWithOllama';
-import McpDashboard from './components/McpDashboard';
+import DraggableAiAssistant from './components/DraggableAiAssistant';
 import LoginPage from './components/LoginPage';
-import FamilyAI from './components/FamilyAI';
-import { ChoreCreationRequest } from './services/ai-chore-toolkit';
 
 function App() {
   const [showLogin, setShowLogin] = useState(true);
@@ -21,8 +17,8 @@ function App() {
   
   // Check if user is logged in and has completed onboarding
   useEffect(() => {
-    // Clear localStorage for demo purposes - remove this line for production
-    localStorage.clear();
+    // Skip onboarding for testing
+    // localStorage.clear();
     
     const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
     const savedUserName = localStorage.getItem('userName');
@@ -69,10 +65,8 @@ function App() {
     setCurrentPage(page);
   };
 
-  const handleChoreCreated = (chores: ChoreCreationRequest[]) => {
+  const handleChoreCreated = (chores: any[]) => {
     console.log('App received created chores:', chores);
-    // The FamilyDashboard will handle the actual chore creation
-    // through the onAIChoresCreated callback
   };
 
   if (showLogin) {
@@ -100,20 +94,13 @@ function App() {
         onAIChoresCreated={handleChoreCreated}
       />
       
-      {/* AI Guide with Ollama Integration */}
-      <AiGuideWithOllama 
-        currentPage={currentPage}
-        userName={userName}
-        familyMembers={familyMembers}
-        onChoreCreated={(chores) => {
-          if (dashboardRef.current && dashboardRef.current.handleAIChoreCreation) {
-            dashboardRef.current.handleAIChoreCreation(chores);
-          }
+      {/* Draggable AI Assistant */}
+      <DraggableAiAssistant 
+        onDataChange={() => {
+          // Dashboard will auto-refresh due to interval
+          console.log('Data changed by AI');
         }}
       />
-      
-      {/* Optional: Add MCP Dashboard as a tab */}
-      {currentPage === 'mcp' && <McpDashboard />}
     </div>
   );
 }

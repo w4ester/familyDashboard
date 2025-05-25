@@ -13,6 +13,7 @@ export interface FamilyData {
   familyMembers: string[];
   files: any[];
   platforms?: any[];
+  familyRoles?: Record<string, 'parent' | 'child'>;
   lastUpdated: string;
 }
 

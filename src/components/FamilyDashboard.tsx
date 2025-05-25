@@ -1,8 +1,11 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import SchoolPlatforms from './SchoolPlatforms';
+import ChoreAssignments from './ChoreAssignments';
 import { dataService } from '../services/data-persistence-mcp';
 import { familyMemoryService } from '../services/family-memory';
 import { ChoreCreationRequest } from '../services/ai-chore-toolkit';
+import ActivityLogViewer from './ActivityLog';
+import { activityLogger } from '../services/activity-logger';
 
 interface FamilyDashboardProps {
   onPageChange?: (page: string) => void;
@@ -101,6 +104,10 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
     };
     
     loadData();
+    
+    // Reload data every 2 seconds to catch external changes
+    const interval = setInterval(loadData, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Expose the chore creation handler
@@ -171,6 +178,17 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
     
     // Add the new entry to the list
     setChoreEntries([...choreEntries, newEntry]);
+    
+    // Log the manual chore creation
+    activityLogger.logChoreAction(
+      personName.trim(),
+      `Completed chore "${choreName.trim()}"`,
+      {
+        choreName: choreName.trim(),
+        points: pointValue,
+        id: newEntry.id
+      }
+    );
     
     // Add person to family members if not already in the list
     if (!familyMembers.includes(personName.trim())) {
@@ -1112,13 +1130,22 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
       {/* Navigation Tabs */}
       <div className="flex border-b mb-6 overflow-x-auto">
         <button
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'chore-assignments' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
+          onClick={() => {
+            setActiveTab('chore-assignments');
+            onPageChange && onPageChange('chore-assignments');
+          }}
+        >
+          Chore Jobs
+        </button>
+        <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab === 'chores' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('chores');
             onPageChange && onPageChange('chores');
           }}
         >
-          Chores & Points
+          Points History
         </button>
         <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab.startsWith('assignments') ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
@@ -1169,10 +1196,29 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
       
       {/* Tab Content */}
       {activeTab === 'family' && renderFamilyTab()}
+      {activeTab === 'chore-assignments' && (
+        <ChoreAssignments 
+          familyMembers={familyMembers}
+          onPointsAwarded={(person, points) => {
+            // Add to chore entries when points are awarded
+            const newEntry = {
+              id: Date.now(),
+              person,
+              chore: 'Verified Chore Completion',
+              timestamp: new Date().toLocaleString(),
+              points
+            };
+            setChoreEntries([...choreEntries, newEntry]);
+          }}
+        />
+      )}
       {activeTab === 'chores' && renderChoresTab()}
       {activeTab.startsWith('assignments') && renderAssignmentsTab()}
       {activeTab === 'platforms' && <SchoolPlatforms familyMembers={familyMembers} />}
       {activeTab.startsWith('calendar') && renderCalendarTab()}
+      
+      {/* Activity Log Viewer */}
+      <ActivityLogViewer />
     </div>
   );
 });
