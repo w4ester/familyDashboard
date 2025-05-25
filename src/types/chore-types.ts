@@ -32,7 +32,7 @@ export interface ChoreAssignment {
 }
 
 export interface GameReward {
-  gameType: 'wordle' | 'any';
+  gameType: 'wordle' | 'connections' | 'any';
   sessions: number; // Number of game sessions earned
   expiresAt?: string; // Optional expiration
   familyPlayRequired?: boolean; // Must play with family

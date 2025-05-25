@@ -1,6 +1,6 @@
 export interface GameScore {
   id: string;
-  gameType: 'wordle' | 'trivia' | 'memory';
+  gameType: 'wordle' | 'connections' | 'trivia' | 'memory';
   playerId: string;
   playerName: string;
   score: number;
