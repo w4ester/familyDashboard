@@ -1,0 +1,78 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Enable version updates for npm (Main React app)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 3
+    groups:
+      # Group React and related dependencies
+      react-dependencies:
+        patterns:
+          - "react"
+          - "react-*"
+          - "@types/react*"
+      # Group testing dependencies
+      testing-dependencies:
+        patterns:
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "playwright"
+          - "puppeteer"
+      # Group development dependencies
+      development-dependencies:
+        dependency-type: "development"
+    ignore:
+      # Major version updates that might break
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-scripts"
+        update-types: ["version-update:semver-major"]
+
+  # Enable version updates for Python (OpenAPI server)
+  - package-ecosystem: "pip"
+    directory: "/server/openapi"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 3
+    groups:
+      # Group FastAPI and related dependencies
+      fastapi-dependencies:
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+          - "pydantic*"
+    allow:
+      # Only allow direct updates
+      - dependency-type: "direct"
+
+  # Enable version updates for GitHub Actions (if you add workflows)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 3
+
+  # Enable version updates for MCP server dependencies (if it has its own package.json)
+  # Uncomment if server/mcp has its own package.json
+  # - package-ecosystem: "npm"
+  #   directory: "/server/mcp"
+  #   schedule:
+  #     interval: "weekly"
+  #     day: "monday"
+  #     time: "04:00"
+  #   open-pull-requests-limit: 5
