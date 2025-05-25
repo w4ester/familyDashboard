@@ -401,16 +401,6 @@ const ConnectionsGame: React.FC<Props> = ({ playerName, onGameComplete, puzzleId
         </div>
       )}
 
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };
