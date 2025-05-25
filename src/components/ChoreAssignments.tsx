@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChoreDefinition, ChoreAssignment, ChoreWeek } from '../types/chore-types';
+import { ChoreDefinition, ChoreAssignment, ChoreWeek, GameReward } from '../types/chore-types';
 import { activityLogger } from '../services/activity-logger';
+import { gameRewardService } from './GameRewardManager';
 
 interface ChoreAssignmentsProps {
   familyMembers: string[];
@@ -32,6 +33,9 @@ export default function ChoreAssignments({
   const [viewFilter, setViewFilter] = useState<'all' | 'assigned' | 'pending' | 'completed'>('all');
   const [personFilter, setPersonFilter] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
+  // New reward states
+  const [rewardType, setRewardType] = useState<'points' | 'game-time' | 'both'>('points');
+  const [gameSessions, setGameSessions] = useState<number>(1);
 
   // Load saved assignments
   useEffect(() => {
@@ -80,6 +84,15 @@ export default function ChoreAssignments({
     const choreDef = choreDefinitions.find(c => c.id === selectedChore);
     if (!choreDef) return;
 
+    const gameReward: GameReward | undefined = 
+      (rewardType === 'game-time' || rewardType === 'both') 
+        ? {
+            gameType: 'any',
+            sessions: gameSessions,
+            familyPlayRequired: true
+          }
+        : undefined;
+
     const newAssignment: ChoreAssignment = {
       id: Date.now().toString(),
       choreId: choreDef.id,
@@ -89,16 +102,27 @@ export default function ChoreAssignments({
       assignedDate: new Date().toISOString(),
       dueDate: dueDate || undefined,
       status: 'assigned',
-      pointValue: choreDef.pointValue,
+      pointValue: rewardType === 'game-time' ? 0 : choreDef.pointValue,
       pointsEarned: 0, // No points until verified!
+      rewardType,
+      gameReward
     };
 
     setAssignments([...assignments, newAssignment]);
 
     // Log the assignment
+    let rewardText = '';
+    if (rewardType === 'points') {
+      rewardText = `${choreDef.pointValue} points`;
+    } else if (rewardType === 'game-time') {
+      rewardText = `${gameSessions} game session(s)`;
+    } else {
+      rewardText = `${choreDef.pointValue} points + ${gameSessions} game session(s)`;
+    }
+    
     activityLogger.log({
       user: currentUser,
-      action: `Assigned chore "${choreDef.name}" to ${selectedPerson} (${choreDef.pointValue} points available)`,
+      action: `Assigned chore "${choreDef.name}" to ${selectedPerson} (Reward: ${rewardText})`,
       category: 'chore',
       result: 'success',
       details: newAssignment
@@ -148,16 +172,31 @@ export default function ChoreAssignments({
           };
 
           // Award points
-          if (onPointsAwarded) {
+          if (onPointsAwarded && a.pointValue > 0) {
             onPointsAwarded(a.assignedTo, a.pointValue);
+          }
+          
+          // Award game rewards
+          if (a.gameReward) {
+            gameRewardService.addReward(a.assignedTo, updated);
+          }
+
+          // Log with appropriate reward text
+          let rewardText = '';
+          if (a.rewardType === 'points') {
+            rewardText = `${a.pointValue} points`;
+          } else if (a.rewardType === 'game-time') {
+            rewardText = `${a.gameReward?.sessions || 0} game session(s)`;
+          } else if (a.rewardType === 'both') {
+            rewardText = `${a.pointValue} points + ${a.gameReward?.sessions || 0} game session(s)`;
           }
 
           activityLogger.log({
             user: currentUser,
-            action: `Verified "${a.choreName}" - ${a.assignedTo} earned ${a.pointValue} points!`,
+            action: `Verified "${a.choreName}" - ${a.assignedTo} earned ${rewardText}!`,
             category: 'points',
             result: 'success',
-            details: { assignmentId, choreName: a.choreName, points: a.pointValue }
+            details: { assignmentId, choreName: a.choreName, reward: rewardText, rewardType: a.rewardType }
           });
 
           return updated;
@@ -217,45 +256,84 @@ export default function ChoreAssignments({
       {/* Create Assignment Form */}
       <div className="bg-amber-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold mb-3">Assign New Chore</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select 
-            value={selectedChore}
-            onChange={(e) => setSelectedChore(e.target.value)}
-            className="p-2 border rounded"
-          >
-            <option value="">Select Chore</option>
-            {choreDefinitions.map(chore => (
-              <option key={chore.id} value={chore.id}>
-                {chore.name} ({chore.pointValue} pts)
-              </option>
-            ))}
-          </select>
+        <div className="space-y-3">
+          {/* First row - basic assignment */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <select 
+              value={selectedChore}
+              onChange={(e) => setSelectedChore(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="">Select Chore</option>
+              {choreDefinitions.map(chore => (
+                <option key={chore.id} value={chore.id}>
+                  {chore.name} ({chore.pointValue} pts)
+                </option>
+              ))}
+            </select>
 
-          <select 
-            value={selectedPerson}
-            onChange={(e) => setSelectedPerson(e.target.value)}
-            className="p-2 border rounded"
-          >
-            <option value="">Assign To</option>
-            {familyMembers.map(member => (
-              <option key={member} value={member}>{member}</option>
-            ))}
-          </select>
+            <select 
+              value={selectedPerson}
+              onChange={(e) => setSelectedPerson(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="">Assign To</option>
+              {familyMembers.map(member => (
+                <option key={member} value={member}>{member}</option>
+              ))}
+            </select>
 
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="p-2 border rounded"
-            placeholder="Due Date (optional)"
-          />
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="p-2 border rounded"
+              placeholder="Due Date (optional)"
+            />
 
-          <button
-            onClick={createAssignment}
-            className="bg-amber-500 text-white p-2 rounded hover:bg-amber-600"
-          >
-            Assign Chore
-          </button>
+            <button
+              onClick={createAssignment}
+              className="bg-amber-500 text-white p-2 rounded hover:bg-amber-600"
+            >
+              Assign Chore
+            </button>
+          </div>
+          
+          {/* Second row - reward settings */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div>
+              <label className="text-sm font-medium mr-2">Reward Type:</label>
+              <select 
+                value={rewardType}
+                onChange={(e) => setRewardType(e.target.value as any)}
+                className="p-2 border rounded"
+              >
+                <option value="points">Points Only</option>
+                <option value="game-time">Game Time Only 🎮</option>
+                <option value="both">Points + Game Time 🎉</option>
+              </select>
+            </div>
+            
+            {(rewardType === 'game-time' || rewardType === 'both') && (
+              <div>
+                <label className="text-sm font-medium mr-2">Game Sessions:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={gameSessions}
+                  onChange={(e) => setGameSessions(parseInt(e.target.value) || 1)}
+                  className="w-20 p-2 border rounded"
+                />
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-600">
+              {rewardType === 'game-time' && '🎮 Complete task to earn family game time!'}
+              {rewardType === 'both' && '🎉 Best of both - points AND game time!'}
+              {rewardType === 'points' && '💰 Traditional points reward'}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -312,10 +390,17 @@ export default function ChoreAssignments({
                       {assignment.status.replace('_', ' ').toUpperCase()}
                     </span>
                     <span className="ml-2 text-sm">
-                      {assignment.pointsEarned > 0 
-                        ? `✅ ${assignment.pointsEarned} points earned!`
-                        : `🎯 ${assignment.pointValue} points available`
-                      }
+                      {assignment.status === 'completed' ? (
+                        <>
+                          {assignment.pointsEarned > 0 && `✅ ${assignment.pointsEarned} points earned! `}
+                          {assignment.gameReward && `🎮 ${assignment.gameReward.sessions} game session(s) earned!`}
+                        </>
+                      ) : (
+                        <>
+                          {assignment.pointValue > 0 && `🎯 ${assignment.pointValue} points available `}
+                          {assignment.gameReward && `🎮 ${assignment.gameReward.sessions} game session(s) available`}
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>

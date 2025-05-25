@@ -1,6 +1,8 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import SchoolPlatforms from './SchoolPlatforms';
 import ChoreAssignments from './ChoreAssignments';
+import FamilyGames from './FamilyGames';
+import RewardSystemEvaluation from './RewardSystemEvaluation';
 import { dataService } from '../services/data-persistence-mcp';
 import { familyMemoryService } from '../services/family-memory';
 import { ChoreCreationRequest } from '../services/ai-chore-toolkit';
@@ -1184,6 +1186,15 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
           Family
         </button>
         <button
+          className={`py-2 px-4 whitespace-nowrap ${activeTab === 'games' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
+          onClick={() => {
+            setActiveTab('games');
+            onPageChange && onPageChange('games');
+          }}
+        >
+          Games 🎮
+        </button>
+        <button
           className={`py-2 px-4 whitespace-nowrap ${activeTab === 'mcp' ? 'border-b-2 border-amber-500 font-semibold' : 'text-gray-500'}`}
           onClick={() => {
             setActiveTab('mcp');
@@ -1215,6 +1226,12 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
       {activeTab === 'chores' && renderChoresTab()}
       {activeTab.startsWith('assignments') && renderAssignmentsTab()}
       {activeTab === 'platforms' && <SchoolPlatforms familyMembers={familyMembers} />}
+      {activeTab === 'games' && (
+        <div className="space-y-6">
+          <FamilyGames familyMembers={familyMembers} />
+          <RewardSystemEvaluation />
+        </div>
+      )}
       {activeTab.startsWith('calendar') && renderCalendarTab()}
       
       {/* Activity Log Viewer */}
