@@ -26,6 +26,16 @@ export interface ChoreAssignment {
   verifiedDate?: string;
   notes?: string;
   photoProof?: string;
+  // New reward fields
+  rewardType?: 'points' | 'game-time' | 'both';
+  gameReward?: GameReward;
+}
+
+export interface GameReward {
+  gameType: 'wordle' | 'any';
+  sessions: number; // Number of game sessions earned
+  expiresAt?: string; // Optional expiration
+  familyPlayRequired?: boolean; // Must play with family
 }
 
 export interface ChoreWeek {

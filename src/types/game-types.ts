@@ -39,4 +39,26 @@ export interface GameSession {
   startedAt: string;
   endedAt?: string;
   isActive: boolean;
+  isRewardSession?: boolean; // Was this a reward for completing task?
+  choreAssignmentId?: string; // Which task earned this?
+}
+
+export interface GameRewardBalance {
+  playerId: string;
+  playerName: string;
+  availableSessions: number;
+  pendingSessions: number; // From tasks not yet verified
+  usedSessions: number;
+  history: GameRewardHistory[];
+}
+
+export interface GameRewardHistory {
+  id: string;
+  playerId: string;
+  type: 'earned' | 'used' | 'expired';
+  sessions: number;
+  choreAssignmentId?: string;
+  gameSessionId?: string;
+  timestamp: string;
+  description: string;
 }

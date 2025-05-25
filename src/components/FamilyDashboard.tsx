@@ -2,6 +2,7 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import SchoolPlatforms from './SchoolPlatforms';
 import ChoreAssignments from './ChoreAssignments';
 import FamilyGames from './FamilyGames';
+import RewardSystemEvaluation from './RewardSystemEvaluation';
 import { dataService } from '../services/data-persistence-mcp';
 import { familyMemoryService } from '../services/family-memory';
 import { ChoreCreationRequest } from '../services/ai-chore-toolkit';
@@ -1225,7 +1226,12 @@ const FamilyDashboard = forwardRef<any, FamilyDashboardProps>(({ onPageChange, o
       {activeTab === 'chores' && renderChoresTab()}
       {activeTab.startsWith('assignments') && renderAssignmentsTab()}
       {activeTab === 'platforms' && <SchoolPlatforms familyMembers={familyMembers} />}
-      {activeTab === 'games' && <FamilyGames familyMembers={familyMembers} />}
+      {activeTab === 'games' && (
+        <div className="space-y-6">
+          <FamilyGames familyMembers={familyMembers} />
+          <RewardSystemEvaluation />
+        </div>
+      )}
       {activeTab.startsWith('calendar') && renderCalendarTab()}
       
       {/* Activity Log Viewer */}

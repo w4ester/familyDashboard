@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import WordleGame from './games/WordleGame';
+import GameRewardManager, { gameRewardService } from './GameRewardManager';
 import { GameScore, GameSession } from '../types/game-types';
 
 interface Props {
@@ -109,9 +110,23 @@ const FamilyGames: React.FC<Props> = ({ familyMembers }) => {
     setCurrentPlayer(host);
   };
 
+  const handleStartRewardGame = (playerId: string) => {
+    setCurrentPlayer(playerId);
+    setGameMode('solo');
+    setSelectedGame('wordle');
+  };
+
   const renderMenu = () => (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-3xl font-bold text-center mb-8">Family Game Time! 🎮</h2>
+      
+      {/* Game Rewards Manager */}
+      <div className="mb-8">
+        <GameRewardManager 
+          familyMembers={familyMembers} 
+          onStartRewardGame={handleStartRewardGame}
+        />
+      </div>
       
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Solo Play */}
