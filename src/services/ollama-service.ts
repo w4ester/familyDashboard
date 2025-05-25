@@ -47,6 +47,23 @@ class OllamaService {
   }
 
   /**
+   * List available models
+   */
+  async listModels(): Promise<string[]> {
+    try {
+      const response = await fetch(`${OLLAMA_API_URL}/tags`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch models');
+      }
+      const data = await response.json();
+      return data.models?.map((model: any) => model.name) || [];
+    } catch (error) {
+      console.error('Error listing models:', error);
+      return [];
+    }
+  }
+
+  /**
    * Generate a completion
    */
   async generate(prompt: string, options: OllamaOptions = {}): Promise<string> {

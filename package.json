@@ -4,6 +4,7 @@
   "homepage": ".",
   "private": true,
   "dependencies": {
+    "@playwright/test": "^1.52.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -12,8 +13,13 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^7.0.0",
+    "http-proxy-middleware": "^3.0.5",
     "postcss-import": "^16.1.0",
     "postcss-nesting": "^13.0.1",
+    "puppeteer": "^24.9.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
@@ -28,15 +34,12 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "mcp:install": "cd server/mcp && npm install",
-    "mcp:dev": "cd server/mcp && npm run dev",
-    "mcp:dev:secure": "cd server/mcp && npm run dev:secure",
-    "mcp:build": "cd server/mcp && npm run build",
-    "mcp:start": "cd server/mcp && npm start",
-    "mcp:start:secure": "cd server/mcp && npm run start:secure",
-    "server:setup": "./start-local-server.sh",
-    "dev": "concurrently \"npm start\" \"npm run mcp:dev\"",
-    "dev:secure": "concurrently \"npm start\" \"npm run mcp:dev:secure\""
+    "build:css": "postcss src/index.css -o src/styles.css",
+    "watch:css": "postcss src/index.css -o src/styles.css --watch",
+    "start:prod": "NODE_ENV=production node server/production-server.js",
+    "start:tools": "node server/tools-api/server.js",
+    "start:all": "concurrently \"npm run start:tools\" \"npm run start\"",
+    "build:prod": "npm run build && npm run start:prod"
   },
   "eslintConfig": {
     "extends": [
@@ -57,9 +60,8 @@
     ]
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "concurrently": "^8.2.2",
-    "gh-pages": "^6.3.0",
-    "postcss": "^8.5.3"
+    "concurrently": "^8.2.0",
+    "gh-pages": "^6.2.0",
+    "playwright": "^1.52.0"
   }
 }

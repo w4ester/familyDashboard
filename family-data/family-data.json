@@ -1,6 +1,38 @@
 {
-  "choreEntries": [],
-  "pointValues": {},
+  "choreEntries": [
+    {
+      "id": 1748046812069,
+      "person": "Test",
+      "chore": "test chore",
+      "timestamp": "5/23/2025, 8:33:32 PM",
+      "points": 3
+    },
+    {
+      "id": 1748046890850,
+      "person": "Dado",
+      "chore": "unload dishes",
+      "timestamp": "5/23/2025, 8:34:50 PM",
+      "points": 5
+    },
+    {
+      "id": 1748046931096,
+      "person": "Dado",
+      "chore": "unload dishes",
+      "timestamp": "5/23/2025, 8:35:31 PM",
+      "points": 5
+    },
+    {
+      "id": 1748046969853,
+      "person": "Dado",
+      "chore": "unload dishes",
+      "timestamp": "5/23/2025, 8:36:09 PM",
+      "points": 5
+    }
+  ],
+  "pointValues": {
+    "test chore": 3,
+    "unload dishes": 5
+  },
   "assignments": [],
   "events": [],
   "familyMembers": [
@@ -8,9 +40,11 @@
     "Giddy",
     "Abel",
     "Mom",
-    "Dad"
+    "Dad",
+    "Test",
+    "Dado"
   ],
   "files": [],
   "platforms": [],
-  "lastUpdated": "2025-05-14T03:14:38.650Z"
+  "lastUpdated": "2025-05-24T00:36:09.853Z"
 }

@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { ollamaService, OllamaMessage } from '../services/ollama-service';
+import { aiChoreToolkit, ChoreCreationRequest } from '../services/ai-chore-toolkit';
 
 interface AiGuideProps {
   currentPage: string;
   userName?: string;
   familyMembers?: string[];
   onClose?: () => void;
+  onChoreCreated?: (chores: ChoreCreationRequest[]) => void;
 }
 
 const AiGuideWithOllama: React.FC<AiGuideProps> = ({ 
   currentPage, 
   userName = 'Friend', 
   familyMembers = [],
-  onClose 
+  onClose,
+  onChoreCreated
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<OllamaMessage[]>([]);
@@ -22,6 +25,8 @@ const AiGuideWithOllama: React.FC<AiGuideProps> = ({
   const [ollamaConnected, setOllamaConnected] = useState(false);
   const [selectedModel, setSelectedModel] = useState('llama2');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [choreCreationMode, setChoreCreationMode] = useState(false);
+  const [createdChores, setCreatedChores] = useState<ChoreCreationRequest[]>([]);
 
   // Check Ollama connection
   useEffect(() => {
@@ -72,9 +77,60 @@ const AiGuideWithOllama: React.FC<AiGuideProps> = ({
     setIsLoading(true);
 
     try {
+      // Check if this is a chore creation request
+      const choreKeywords = ['chore', 'task', 'create', 'add', 'assign', 'point'];
+      const isChoreRequest = choreKeywords.some(keyword => 
+        userInput.toLowerCase().includes(keyword)
+      );
+
+      if (isChoreRequest && ollamaConnected && currentPage.includes('Chores')) {
+        // Use AI Chore Toolkit
+        const choreResponse = await aiChoreToolkit.createChoresFromText(
+          userInput,
+          familyMembers,
+          [], // TODO: Pass existing chores
+          selectedModel
+        );
+
+        setCreatedChores(choreResponse.chores);
+
+        const assistantMessage: OllamaMessage = {
+          role: 'assistant',
+          content: `🎯 **Chore Creation Assistant**\n\n${choreResponse.explanation}\n\n**Created Chores:**\n${choreResponse.chores.map(c => 
+            `• **${c.choreName}** ${c.assignedTo ? `for ${c.assignedTo}` : ''} - ${c.pointValue} points (${c.frequency})`
+          ).join('\n')}\n\n${choreResponse.suggestions ? '**Suggestions:**\n' + choreResponse.suggestions.map(s => `💡 ${s}`).join('\n') : ''}\n\n*Would you like me to add these chores to your family dashboard?*`
+        };
+
+        setMessages([...updatedMessages, assistantMessage]);
+        setChoreCreationMode(true);
+        return;
+      }
+
       if (ollamaConnected) {
-        // Use Ollama for response
-        const response = await ollamaService.chat(updatedMessages, {
+        // Enhanced system prompt for family assistant
+        const enhancedMessages: OllamaMessage[] = [
+          {
+            role: 'system',
+            content: `You are Buddy, a friendly AI family assistant! 🤖✨
+
+**Context:**
+- Family: ${userName}'s family
+- Members: ${familyMembers.join(', ') || 'Getting to know you!'}
+- Current page: ${currentPage}
+- I can help with: chores, homework, schedules, family activities
+
+**Special Powers:**
+- 🎯 Create chores with points (just ask "create chores for...")
+- 📚 Help with homework organization
+- 📅 Plan family activities
+- 🏆 Track achievements and celebrate wins
+
+Be enthusiastic, encouraging, and use emojis! Give specific, actionable advice.`
+          },
+          ...updatedMessages.slice(1) // Skip the original system message
+        ];
+
+        const response = await ollamaService.chat(enhancedMessages, {
           model: selectedModel,
           temperature: 0.8
         });
@@ -86,19 +142,10 @@ const AiGuideWithOllama: React.FC<AiGuideProps> = ({
 
         setMessages([...updatedMessages, assistantMessage]);
       } else {
-        // Fallback response when Ollama is not available
+        // Enhanced fallback response
         const fallbackMessage: OllamaMessage = {
           role: 'assistant',
-          content: `Hi ${userName}! 🤖 I'm having trouble connecting to my AI brain right now, but I can still help! 
-
-            You're on the ${currentPage} page. Here are some tips:
-            
-            💡 **Chores**: Track your chores and earn points!
-            📚 **Assignments**: Keep track of homework and due dates
-            📅 **Calendar**: Never miss important family events
-            🏫 **Platforms**: Quick access to school websites
-            
-            Is there something specific you'd like help with?`
+          content: `Hi ${userName}! 🤖 I'm having trouble connecting to my AI brain right now, but I can still help! \n\nYou're on the ${currentPage} page. Here's what I can help with:\n\n🎯 **Chores & Points** - Track tasks and earn rewards!\n📚 **School Assignments** - Stay on top of homework\n📅 **Family Calendar** - Never miss important events\n🏫 **School Platforms** - Quick access to school sites\n\n*Try asking: "Help me create chores" or "How do I use the points system?"*`
         };
 
         setMessages([...updatedMessages, fallbackMessage]);
@@ -108,13 +155,39 @@ const AiGuideWithOllama: React.FC<AiGuideProps> = ({
       
       const errorMessage: OllamaMessage = {
         role: 'assistant',
-        content: 'Oops! I had a little hiccup. Could you try asking that again? 🤔'
+        content: '🤔 Oops! I had a little hiccup. Could you try asking that again?'
       };
       
       setMessages([...updatedMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfirmChores = () => {
+    if (onChoreCreated && createdChores.length > 0) {
+      onChoreCreated(createdChores);
+      
+      const confirmMessage: OllamaMessage = {
+        role: 'assistant',
+        content: `🎉 **Success!** I've added ${createdChores.length} chores to your family dashboard!\n\nThey should appear in your chores list now. Great job setting up your family's task system! 💪`
+      };
+      
+      setMessages([...messages, confirmMessage]);
+      setChoreCreationMode(false);
+      setCreatedChores([]);
+    }
+  };
+
+  const handleCancelChores = () => {
+    const cancelMessage: OllamaMessage = {
+      role: 'assistant',
+      content: `No problem! The chores weren't added. Feel free to ask me to create different chores anytime! 😊`
+    };
+    
+    setMessages([...messages, cancelMessage]);
+    setChoreCreationMode(false);
+    setCreatedChores([]);
   };
 
   const toggleOpen = () => {
@@ -198,6 +271,27 @@ const AiGuideWithOllama: React.FC<AiGuideProps> = ({
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
                 <p className="text-gray-500 mt-2">Thinking...</p>
+              </div>
+            )}
+
+            {/* Chore Confirmation Buttons */}
+            {choreCreationMode && createdChores.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <p className="text-amber-800 font-semibold mb-3">🎯 Add these chores to your dashboard?</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleConfirmChores}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center"
+                  >
+                    ✅ Yes, Add Chores
+                  </button>
+                  <button
+                    onClick={handleCancelChores}
+                    className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors flex items-center"
+                  >
+                    ❌ Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>

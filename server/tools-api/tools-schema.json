@@ -1,0 +1,119 @@
+{
+  "tools": [
+    {
+      "name": "create_chore",
+      "description": "Create a new chore for a family member with points",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "choreName": {
+            "type": "string",
+            "description": "Name of the chore (e.g., 'unload dishes', 'clean room')"
+          },
+          "assignedTo": {
+            "type": "string",
+            "description": "Name of the family member who will do this chore"
+          },
+          "points": {
+            "type": "integer",
+            "description": "Point value for completing this chore (1-10)",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 2
+          },
+          "frequency": {
+            "type": "string",
+            "description": "How often this chore should be done",
+            "enum": ["daily", "weekly", "monthly", "one-time"],
+            "default": "weekly"
+          }
+        },
+        "required": ["choreName", "assignedTo"]
+      }
+    },
+    {
+      "name": "create_calendar_event",
+      "description": "Add an event to the family calendar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Event title (e.g., 'Soccer Practice', 'Dentist Appointment')"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date in YYYY-MM-DD format"
+          },
+          "time": {
+            "type": "string",
+            "description": "Time in HH:MM format (optional)"
+          },
+          "person": {
+            "type": "string",
+            "description": "Who this event is for"
+          },
+          "location": {
+            "type": "string",
+            "description": "Where the event takes place (optional)"
+          }
+        },
+        "required": ["title", "date", "person"]
+      }
+    },
+    {
+      "name": "create_assignment",
+      "description": "Add a school assignment or homework task",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "assignmentName": {
+            "type": "string",
+            "description": "Name of the assignment"
+          },
+          "subject": {
+            "type": "string",
+            "description": "School subject (e.g., 'Math', 'Science', 'English')"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date in YYYY-MM-DD format"
+          },
+          "person": {
+            "type": "string",
+            "description": "Student who has this assignment"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "default": "medium"
+          }
+        },
+        "required": ["assignmentName", "dueDate", "person"]
+      }
+    },
+    {
+      "name": "add_family_member",
+      "description": "Add a new person to the family",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Family member's name"
+          },
+          "age": {
+            "type": "integer",
+            "description": "Age (optional)"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["parent", "child", "guardian"],
+            "default": "child"
+          }
+        },
+        "required": ["name"]
+      }
+    }
+  ]
+}

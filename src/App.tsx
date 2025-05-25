@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import FamilyDashboard from './components/FamilyDashboard';
 import WelcomePage from './components/WelcomePage';
 import OnboardingFlow from './components/OnboardingFlow';
-import AiGuide from './components/AiGuide';
-import AiGuideWithOllama from './components/AiGuideWithOllama';
-import McpDashboard from './components/McpDashboard';
+import DraggableAiAssistant from './components/DraggableAiAssistant';
 import LoginPage from './components/LoginPage';
-import FamilyAI from './components/FamilyAI';
 
 function App() {
   const [showLogin, setShowLogin] = useState(true);
@@ -16,11 +13,12 @@ function App() {
   const [userName, setUserName] = useState('');
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const dashboardRef = useRef<any>(null);
   
   // Check if user is logged in and has completed onboarding
   useEffect(() => {
-    // Clear localStorage for demo purposes - remove this line for production
-    localStorage.clear();
+    // Skip onboarding for testing
+    // localStorage.clear();
     
     const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
     const savedUserName = localStorage.getItem('userName');
@@ -67,6 +65,10 @@ function App() {
     setCurrentPage(page);
   };
 
+  const handleChoreCreated = (chores: any[]) => {
+    console.log('App received created chores:', chores);
+  };
+
   if (showLogin) {
     return <LoginPage onLogin={handleLogin} />;
   }
@@ -86,21 +88,19 @@ function App() {
   
   return (
     <div className="App">
-      <FamilyDashboard onPageChange={handlePageChange} />
-      
-      {/* Enhanced Family AI with Memory Integration */}
-      <FamilyAI 
-        familyId="default-family" // You can make this dynamic based on family ID
-        userId={userName || 'current-user'}
-        userName={userName}
-        onMemoryCreated={(memory) => {
-          console.log('New family memory created:', memory);
-          // You can add any additional handling here
-        }}
+      <FamilyDashboard 
+        ref={dashboardRef}
+        onPageChange={handlePageChange}
+        onAIChoresCreated={handleChoreCreated}
       />
       
-      {/* Optional: Add MCP Dashboard as a tab */}
-      {currentPage === 'mcp' && <McpDashboard />}
+      {/* Draggable AI Assistant */}
+      <DraggableAiAssistant 
+        onDataChange={() => {
+          // Dashboard will auto-refresh due to interval
+          console.log('Data changed by AI');
+        }}
+      />
     </div>
   );
 }
