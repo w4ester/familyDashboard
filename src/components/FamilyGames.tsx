@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import WordleGame from './games/WordleGame';
+import ConnectionsGame from './games/ConnectionsGame';
 import GameRewardManager, { gameRewardService } from './GameRewardManager';
 import { GameScore, GameSession } from '../types/game-types';
 
@@ -9,9 +10,10 @@ interface Props {
 
 const FamilyGames: React.FC<Props> = ({ familyMembers }) => {
   const [gameMode, setGameMode] = useState<'menu' | 'solo' | 'challenge'>('menu');
-  const [selectedGame, setSelectedGame] = useState<'wordle' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<'wordle' | 'connections' | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState('');
   const [challengeWord, setChallengeWord] = useState('');
+  const [challengePuzzle, setChallengePuzzle] = useState('');
   const [currentSession, setCurrentSession] = useState<GameSession | null>(null);
   const [leaderboard, setLeaderboard] = useState<GameScore[]>([]);
   const [recentScores, setRecentScores] = useState<GameScore[]>([]);
@@ -80,33 +82,40 @@ const FamilyGames: React.FC<Props> = ({ familyMembers }) => {
     }
   };
 
-  const startSoloGame = (player: string) => {
+  const startSoloGame = (player: string, game: 'wordle' | 'connections' = 'wordle') => {
     setCurrentPlayer(player);
     setGameMode('solo');
-    setSelectedGame('wordle');
+    setSelectedGame(game);
   };
 
-  const startChallenge = (host: string) => {
-    // Generate a random word for all players to try
-    const words = ['BEACH', 'BRAIN', 'CHAIR', 'DREAM', 'FRESH', 'HAPPY', 'LIGHT', 'MUSIC', 'PARTY', 'SMILE'];
-    const word = words[Math.floor(Math.random() * words.length)];
+  const startChallenge = (host: string, game: 'wordle' | 'connections' = 'wordle') => {
+    if (game === 'wordle') {
+      // Generate a random word for all players to try
+      const words = ['BEACH', 'BRAIN', 'CHAIR', 'DREAM', 'FRESH', 'HAPPY', 'LIGHT', 'MUSIC', 'PARTY', 'SMILE'];
+      const word = words[Math.floor(Math.random() * words.length)];
+      setChallengeWord(word);
+    } else {
+      // Select a random puzzle ID for connections
+      const puzzleIds = ['1', '2', '3'];
+      const puzzleId = puzzleIds[Math.floor(Math.random() * puzzleIds.length)];
+      setChallengePuzzle(puzzleId);
+    }
     
     const session: GameSession = {
       id: Date.now().toString(),
       hostId: host,
       hostName: host,
-      gameType: 'wordle',
+      gameType: game,
       players: familyMembers,
-      currentWord: word,
+      currentWord: game === 'wordle' ? challengeWord : undefined,
       scores: [],
       startedAt: new Date().toISOString(),
       isActive: true
     };
     
     setCurrentSession(session);
-    setChallengeWord(word);
     setGameMode('challenge');
-    setSelectedGame('wordle');
+    setSelectedGame(game);
     setCurrentPlayer(host);
   };
 
@@ -133,32 +142,48 @@ const FamilyGames: React.FC<Props> = ({ familyMembers }) => {
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Solo Play</h3>
           <p className="text-gray-600 mb-4">Practice your skills with solo games</p>
-          <select
-            className="w-full p-2 border rounded mb-4"
-            onChange={(e) => e.target.value && startSoloGame(e.target.value)}
-            defaultValue=""
-          >
-            <option value="">Select Player</option>
-            {familyMembers.map(member => (
-              <option key={member} value={member}>{member}</option>
-            ))}
-          </select>
+          <div className="space-y-3">
+            <select
+              className="w-full p-2 border rounded"
+              onChange={(e) => {
+                const [player, game] = e.target.value.split('|');
+                if (player && game) startSoloGame(player, game as 'wordle' | 'connections');
+              }}
+              defaultValue=""
+            >
+              <option value="">Select Player & Game</option>
+              {familyMembers.map(member => (
+                <optgroup key={member} label={member}>
+                  <option value={`${member}|wordle`}>🔤 Wordle</option>
+                  <option value={`${member}|connections`}>🔗 Connections</option>
+                </optgroup>
+              ))}
+            </select>
+          </div>
         </div>
         
         {/* Challenge Mode */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Family Challenge</h3>
           <p className="text-gray-600 mb-4">Everyone tries the same puzzle!</p>
-          <select
-            className="w-full p-2 border rounded mb-4"
-            onChange={(e) => e.target.value && startChallenge(e.target.value)}
-            defaultValue=""
-          >
-            <option value="">Who's Starting?</option>
-            {familyMembers.map(member => (
-              <option key={member} value={member}>{member}</option>
-            ))}
-          </select>
+          <div className="space-y-3">
+            <select
+              className="w-full p-2 border rounded"
+              onChange={(e) => {
+                const [player, game] = e.target.value.split('|');
+                if (player && game) startChallenge(player, game as 'wordle' | 'connections');
+              }}
+              defaultValue=""
+            >
+              <option value="">Select Host & Game</option>
+              {familyMembers.map(member => (
+                <optgroup key={member} label={member}>
+                  <option value={`${member}|wordle`}>🔤 Wordle Challenge</option>
+                  <option value={`${member}|connections`}>🔗 Connections Challenge</option>
+                </optgroup>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
       
@@ -284,6 +309,83 @@ const FamilyGames: React.FC<Props> = ({ familyMembers }) => {
               }
             }}
             targetWord={gameMode === 'challenge' ? challengeWord : undefined}
+          />
+        </div>
+      );
+    }
+    
+    if (selectedGame === 'connections') {
+      return (
+        <div>
+          {/* Game Header */}
+          <div className="bg-white rounded-lg shadow p-4 mb-4 max-w-2xl mx-auto">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold">{gameMode === 'challenge' ? 'Challenge Mode' : 'Solo Mode'}</h3>
+                {currentSession && (
+                  <p className="text-sm text-gray-600">
+                    Players: {currentSession.scores.length}/{currentSession.players.length}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setGameMode('menu');
+                  setSelectedGame(null);
+                  setCurrentSession(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ← Back to Menu
+              </button>
+            </div>
+          </div>
+          
+          {/* Challenge Progress */}
+          {currentSession && gameMode === 'challenge' && (
+            <div className="bg-white rounded-lg shadow p-4 mb-4 max-w-2xl mx-auto">
+              <h4 className="font-medium mb-2">Challenge Progress:</h4>
+              <div className="space-y-1">
+                {currentSession.players.map(player => {
+                  const playerScore = currentSession.scores.find(s => s.playerName === player);
+                  return (
+                    <div key={player} className="flex justify-between text-sm">
+                      <span>{player}</span>
+                      <span>
+                        {playerScore ? `✓ ${playerScore.score} pts` : 
+                         player === currentPlayer ? '🎮 Playing...' : '⏳ Waiting...'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {/* The Game */}
+          <ConnectionsGame
+            playerName={currentPlayer}
+            onGameComplete={(score) => {
+              handleGameComplete(score);
+              
+              if (gameMode === 'challenge' && currentSession) {
+                // Move to next player
+                const currentIndex = currentSession.players.indexOf(currentPlayer);
+                const nextIndex = currentIndex + 1;
+                
+                if (nextIndex < currentSession.players.length) {
+                  setCurrentPlayer(currentSession.players[nextIndex]);
+                } else {
+                  // All players done, show results
+                  setTimeout(() => {
+                    setGameMode('menu');
+                    setSelectedGame(null);
+                    setCurrentSession(null);
+                  }, 3000);
+                }
+              }
+            }}
+            puzzleId={gameMode === 'challenge' ? challengePuzzle : undefined}
           />
         </div>
       );
